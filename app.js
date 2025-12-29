@@ -9,6 +9,11 @@ const log = (msg) => {
   if (statusEl) statusEl.textContent = msg;
 };
 
+const timeout = (ms) =>
+  new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms)
+  );
+
 async function run() {
   try {
     if (!window.liff) throw new Error("LIFF SDK not loaded");
@@ -32,21 +37,16 @@ async function run() {
     )}&t=${Date.now()}`;
 
     log("4) fetching GAS...");
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-
-    const res = await fetch(url, {
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
+    const res = await Promise.race([
+      fetch(url, { cache: "no-store" }),
+      timeout(8000),
+    ]);
 
     log(`4.5) response: ${res.status}`);
 
-    const text = await res.text(); // まずは生で受け取る
-    log(`4.8) body: ${text.slice(0, 120)}...`);
+    const text = await res.text();
+    log(`4.8) body head: ${text.slice(0, 80)}...`);
 
-    // JSONっぽい時だけパース
     let data;
     try {
       data = JSON.parse(text);
@@ -56,7 +56,7 @@ async function run() {
 
     log(`5) GAS OK: ${JSON.stringify(data)}`);
   } catch (e) {
-    log(`NG: ${e?.name || "Error"} / ${e?.message || e}`);
+    log(`NG: ${e?.message || e}`);
     console.error(e);
   }
 }
