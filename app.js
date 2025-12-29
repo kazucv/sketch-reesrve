@@ -1,10 +1,7 @@
-console.log("APP VERSION: 2025-12-29 14:16 POST");
-document.getElementById("status").textContent =
-  "APP VERSION: 2025-12-29 14:16 POST";
+console.log("APP VERSION: 2025-12-29 UI-CLICK-RESERVE");
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbx2e8Xd8kAQ--kWErdGY7CBtsJ8gDSD87SEQbtDHrfM5HL0xxGhfpzZ8hQ5Qjj8bRg/exec";
-
 const LIFF_ID = "2008793696-IEhzXwEH";
 
 const statusEl = document.getElementById("status");
@@ -33,11 +30,37 @@ async function postJson(url, payload, timeoutMs = 10000) {
     } catch {
       throw new Error(`JSON parse failed: ${text.slice(0, 200)}`);
     }
-
     return { status: res.status, data };
   } finally {
     clearTimeout(timer);
   }
+}
+
+function clearBodyBelowStatus_() {
+  // status以外の表示領域をざっくり作り直す（雑だけどデバッグに強い）
+  const root = document.getElementById("root");
+  if (root) root.remove();
+
+  const div = document.createElement("div");
+  div.id = "root";
+  document.body.appendChild(div);
+  return div;
+}
+
+function renderSlots_(root, slots, onClick) {
+  const ul = document.createElement("ul");
+  slots.forEach((s) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.textContent = `${s.start} 〜 ${s.end}`;
+    btn.style.fontSize = "16px";
+    btn.style.padding = "10px 12px";
+    btn.style.margin = "6px 0";
+    btn.onclick = () => onClick(s);
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+  root.appendChild(ul);
 }
 
 async function run() {
@@ -50,69 +73,57 @@ async function run() {
     log("1) init LIFF...");
     await liff.init({ liffId: LIFF_ID });
 
-    log(`2) isLoggedIn: ${liff.isLoggedIn()}`);
     if (!liff.isLoggedIn()) {
-      log("2.5) redirecting to login...");
+      log("ログインへ…");
       liff.login();
       return;
     }
 
-    log("3) getting profile...");
+    log("2) getting profile...");
     const profile = await liff.getProfile();
-    log(`3.5) got profile: ${profile.displayName}`);
 
-    // 4) getSlots
+    log("3) getSlots...");
     const payload = {
       action: "getSlots",
       userId: profile.userId,
       ym: "202601",
     };
+    const { data } = await postJson(GAS_URL, payload);
 
-    log("4) POST getSlots...");
-    const { status, data } = await postJson(GAS_URL, payload);
-
-    log(`5) status: ${status}`);
-    log(`6) data: ${JSON.stringify(data)}`);
-
-    const slots = data?.ok && Array.isArray(data.slots) ? data.slots : [];
-
-    // slots表示
-    if (slots.length > 0) {
-      const ul = document.createElement("ul");
-      slots.forEach((s) => {
-        const li = document.createElement("li");
-        li.textContent = `${s.start} 〜 ${s.end}`;
-        ul.appendChild(li);
-      });
-      document.body.appendChild(ul);
-    }
-
-    // 7) 試しに1件予約（あとでボタンにする）
-    const first = slots[0];
-    if (!first) {
-      log("枠がない…");
+    if (!data?.ok || !Array.isArray(data.slots)) {
+      log(`枠取得NG: ${JSON.stringify(data)}`);
       return;
     }
 
-    const payload2 = {
-      action: "createReservation",
-      userId: profile.userId,
-      slotId: first.slotId,
-      name: "テスト太郎",
-      tel: "09012345678",
-      note: "LIFFテスト予約",
-    };
+    log(`枠OK: ${data.slots.length} 件（押して予約してね）`);
 
-    log("7) POST createReservation...");
-    const r2 = await postJson(GAS_URL, payload2, 10000);
-    log(`8) reserve response: ${r2.status}`);
+    const root = clearBodyBelowStatus_();
 
-    if (!r2.data?.ok) {
-      log(`予約NG: ${JSON.stringify(r2.data)}`);
-      return;
-    }
+    renderSlots_(root, data.slots, async (slot) => {
+      try {
+        log("予約中…");
 
-    log(`9) 予約OK: ${r2.data.reservationId}`);
+        const payload2 = {
+          action: "createReservation",
+          userId: profile.userId,
+          slotId: slot.slotId,
+          name: "テスト太郎",
+          tel: "09012345678",
+          note: "LIFFテスト予約",
+        };
+
+        const r2 = await postJson(GAS_URL, payload2);
+
+        if (!r2.data?.ok) {
+          log(`予約NG: ${JSON.stringify(r2.data)}`);
+          return;
+        }
+
+        log(`予約OK: ${r2.data.reservationId}`);
+      } catch (e) {
+        log(`予約ERROR: ${e?.message || e}`);
+      }
+    });
   } catch (e) {
     log(`ERROR: ${e?.name || "Error"} / ${e?.message || e}`);
     console.error(e);
