@@ -9,15 +9,41 @@ const log = (msg) => {
   if (statusEl) statusEl.textContent = msg;
 };
 
-const timeout = (ms) =>
-  new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms)
-  );
+async function postJson(url, payload, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      // ↑GASは application/json でも動くこと多いけど、環境差の事故を避けるため text/plain 推奨
+      body: JSON.stringify(payload),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    const text = await res.text(); // まずtextで受ける（JSONパース失敗の切り分けが楽）
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`JSON parse failed: ${text.slice(0, 200)}`);
+    }
+
+    return { status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function run() {
-  try {
-    if (!window.liff) throw new Error("LIFF SDK not loaded");
+  if (!window.liff) {
+    log("LIFF SDKが読み込めてない…");
+    throw new Error("LIFF SDK not loaded");
+  }
 
+  try {
     log("1) init LIFF...");
     await liff.init({ liffId: LIFF_ID });
 
@@ -32,31 +58,36 @@ async function run() {
     const profile = await liff.getProfile();
     log(`3.5) got profile: ${profile.displayName}`);
 
-    const url = `${GAS_URL}?userId=${encodeURIComponent(
-      profile.userId
-    )}&t=${Date.now()}`;
+    // ✅ ここが本命：GASへPOST
+    const payload = {
+      action: "getSlots",
+      userId: profile.userId,
+      ym: "202601", // ← いったん固定でOK（あとでUIで選ぶ）
+    };
 
-    log("4) fetching GAS...");
-    const res = await Promise.race([
-      fetch(url, { cache: "no-store" }),
-      timeout(8000),
-    ]);
+    log("4) POST getSlots to GAS...");
+    const { status, data } = await postJson(GAS_URL, payload, 10000);
 
-    log(`4.5) response: ${res.status}`);
-
-    const text = await res.text();
-    log(`4.8) body head: ${text.slice(0, 80)}...`);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
+    log(`5) GAS response: ${status}`);
+    if (!data?.ok) {
+      log(`NG: ${JSON.stringify(data)}`);
+      return;
     }
 
-    log(`5) GAS OK: ${JSON.stringify(data)}`);
+    // とりあえず見える化（UIは後で）
+    const slots = data.slots || [];
+    log(`6) slots: ${slots.length}`);
+
+    // 画面に出す（最小）
+    const ul = document.createElement("ul");
+    slots.forEach((s) => {
+      const li = document.createElement("li");
+      li.textContent = `${s.start} 〜 ${s.end}`;
+      ul.appendChild(li);
+    });
+    document.body.appendChild(ul);
   } catch (e) {
-    log(`NG: ${e?.message || e}`);
+    log(`ERROR: ${e?.name || "Error"} / ${e?.message || e}`);
     console.error(e);
   }
 }
