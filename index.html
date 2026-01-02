@@ -8,7 +8,7 @@
     <!-- LIFF -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-    <!-- ✅ flatpickr (CDN) -->
+    <!-- flatpickr -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
@@ -109,9 +109,15 @@
         margin-top: 10px;
       }
 
-      /* flatpickr input（見た目は後で調整でOK） */
+      /* ✅ カレンダーは常時表示したいので input は隠す */
       #date {
-        font-size: 18px;
+        display: none;
+      }
+
+      /* flatpickr の見た目微調整（必要なら） */
+      .flatpickr-calendar {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        border-radius: 18px;
       }
     </style>
   </head>
@@ -121,13 +127,11 @@
 
     <div id="status">loading...</div>
 
-    <!-- View: Calendar (flatpickr) -->
+    <!-- View: Calendar -->
     <section id="viewCalendar">
       <div class="section-title">日付選択</div>
 
-      <!-- ✅ flatpickr をここに刺す -->
-      <input id="date" placeholder="日付を選択" />
-      <div style="height: 12px"></div>
+      <input id="date" />
       <div id="calendar"></div>
     </section>
 
@@ -177,11 +181,10 @@
       <div class="hint">お名前と電話番号は必須です</div>
     </section>
 
-    <!-- ✅ flatpickr JS（app.js より先に読み込む） -->
+    <!-- flatpickr JS（app.js より先） -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
 
-    <!-- App -->
     <script src="./app.js"></script>
   </body>
 </html>
