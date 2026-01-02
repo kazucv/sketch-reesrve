@@ -4,7 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>LIFF Reserve</title>
+
+    <!-- LIFF -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <!-- ✅ flatpickr (CDN) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
 
     <style>
       body {
@@ -37,58 +45,12 @@
         border-radius: 10px;
       }
 
-      /* ===== Calendar (JSが #calendar に描画する前提) ===== */
-      #calendar .cal-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 14px 0 10px;
-      }
-      #calendar .cal-nav {
-        border: 0;
-        background: #eee;
-        padding: 10px 12px;
-        border-radius: 10px;
-      }
-      #calendar .cal-title {
-        font-size: 18px;
-        font-weight: 700;
-      }
-      #calendar .cal-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-      }
-      #calendar .dow {
-        font-size: 12px;
-        opacity: 0.6;
-        text-align: center;
-        padding: 4px 0;
-      }
-      #calendar .day {
-        border: 0;
-        padding: 14px 0;
-        border-radius: 14px;
-        background: #f3f3f3;
-        text-align: center;
-        font-weight: 600;
-      }
-      #calendar .day:disabled {
-        opacity: 0.35;
-      }
-      #calendar .day.is-today {
-        outline: 2px solid #000;
-        background: #fff;
-      }
-      #calendar .day.is-selected {
-        background: #dbeafe;
-      }
-
-      /* ===== Slots ===== */
       .section-title {
         font-size: 42px;
         margin: 6px 0 14px;
       }
+
+      /* slots */
       .group {
         margin: 14px 0 18px;
       }
@@ -108,21 +70,12 @@
         font-size: 18px;
       }
 
-      /* ===== Form ===== */
+      /* form */
       .card {
         background: #f3f3f3;
         padding: 14px 16px;
         border-radius: 18px;
         margin: 10px 0 18px;
-      }
-      .row {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-      }
-      .row:last-child {
-        border-bottom: 0;
       }
       .label {
         opacity: 0.65;
@@ -155,6 +108,11 @@
         font-size: 13px;
         margin-top: 10px;
       }
+
+      /* flatpickr input（見た目は後で調整でOK） */
+      #date {
+        font-size: 18px;
+      }
     </style>
   </head>
 
@@ -163,11 +121,13 @@
 
     <div id="status">loading...</div>
 
-    <!-- View: Calendar -->
+    <!-- View: Calendar (flatpickr) -->
     <section id="viewCalendar">
       <div class="section-title">日付選択</div>
 
-      <!-- ✅ ここにJSが月カレンダーを描画する -->
+      <!-- ✅ flatpickr をここに刺す -->
+      <input id="date" placeholder="日付を選択" />
+      <div style="height: 12px"></div>
       <div id="calendar"></div>
     </section>
 
@@ -217,6 +177,11 @@
       <div class="hint">お名前と電話番号は必須です</div>
     </section>
 
+    <!-- ✅ flatpickr JS（app.js より先に読み込む） -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
+
+    <!-- App -->
     <script src="./app.js"></script>
   </body>
 </html>
