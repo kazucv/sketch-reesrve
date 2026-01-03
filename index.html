@@ -423,7 +423,7 @@
         <!-- View: Done -->
         <section id="viewDone" class="hidden">
           <div class="title">完了</div>
-          <div class="card" id="doneText"></div>
+          <div class="card" id="doneSummary"></div>
 
           <div class="done-actions">
             <button id="doneToCalendar" class="ghost">別日を予約する</button>
@@ -433,6 +433,13 @@
           </div>
         </section>
       </main>
+
+      <!-- View: List -->
+      <section id="viewList" class="hidden">
+        <div class="section-title">予約一覧</div>
+        <div id="listStatus" style="opacity: 0.7; margin: 8px 0 14px"></div>
+        <div id="listRoot"></div>
+      </section>
 
       <!-- Tabbar -->
       <nav class="tabbar" aria-label="tabbar">
@@ -484,6 +491,6 @@
       });
     </script>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260103"></script>
   </body>
 </html>

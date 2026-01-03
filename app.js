@@ -32,6 +32,10 @@ const doneSummary = document.getElementById("doneSummary");
 const doneToCalendar = document.getElementById("doneToCalendar");
 const doneToSlots = document.getElementById("doneToSlots");
 
+const viewList = document.getElementById("viewList");
+const listRoot = document.getElementById("listRoot");
+const listStatus = document.getElementById("listStatus");
+
 // ====== state ======
 let profile = null;
 let fp = null;
@@ -54,11 +58,13 @@ function showView(name) {
   viewSlots.classList.add("hidden");
   viewForm.classList.add("hidden");
   viewDone.classList.add("hidden");
+  viewList?.classList.add("hidden");
 
   if (name === "calendar") viewCalendar.classList.remove("hidden");
   if (name === "slots") viewSlots.classList.remove("hidden");
   if (name === "form") viewForm.classList.remove("hidden");
   if (name === "done") viewDone.classList.remove("hidden");
+  if (name === "list") viewList?.classList.remove("hidden");
 }
 
 function showDone(reserveResult) {
@@ -391,6 +397,95 @@ async function reserveSelected() {
   const ym = toYmFromYmd(selectedDate);
   await refreshSlotsYm(ym);
   fp.redraw();
+}
+
+function setListStatus(msg) {
+  if (listStatus) listStatus.textContent = msg || "";
+}
+
+function fmtYmdJa(ymd) {
+  // "2026-01-05" -> "2026年1月5日"
+  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return ymd || "";
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  return `${y}年${mo}月${d}日`;
+}
+
+function fmtTimeRange(item) {
+  // item.start/end があればそれ優先。なければ slotId から
+  const startHm = hmFromIso(item.start) || slotIdToHm(item.slotId);
+  const endHm = hmFromIso(item.end) || "";
+  return endHm ? `${startHm} 〜 ${endHm}` : startHm;
+}
+
+async function fetchMyReservations() {
+  // GAS側の action 名が揺れてる可能性があるから、2候補でトライ（保険）
+  const candidates = ["getMyReservations", "myReservations", "getReservations"];
+
+  for (const action of candidates) {
+    try {
+      const payload = { action, userId: profile.userId };
+      const { data } = await postJson(GAS_URL, payload, 10000);
+      if (data?.ok && Array.isArray(data.items)) return data.items;
+      if (data?.ok && Array.isArray(data.reservations))
+        return data.reservations;
+      // ok:false は次候補へ
+    } catch (e) {
+      // 次候補へ
+    }
+  }
+  throw new Error("予約一覧APIが見つからない（GAS側のaction名を確認してね）");
+}
+
+function renderReservationList(items) {
+  if (!listRoot) return;
+  listRoot.innerHTML = "";
+
+  if (!items || items.length === 0) {
+    listRoot.innerHTML = `<div style="opacity:.7;">予約はまだありません。</div>`;
+    return;
+  }
+
+  // 新しい順にしたい場合（reservationIdが Ryyyymmddhhmmss-xxx っぽいなら概ね並ぶ）
+  const sorted = [...items].reverse();
+
+  sorted.forEach((it) => {
+    const ymd = it.date || slotIdToYmd(it.slotId) || "";
+    const time = fmtTimeRange(it);
+    const rid = it.reservationId || it.id || "";
+    const status = it.status || "予約済み";
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div style="font-weight:700;">${fmtYmdJa(ymd)} / ${time}</div>
+      <div style="opacity:.7; margin-top:6px;">${status}</div>
+      ${
+        rid
+          ? `<div style="opacity:.5; margin-top:6px; font-size:12px;">予約ID: ${rid}</div>`
+          : ""
+      }
+    `;
+    listRoot.appendChild(card);
+  });
+}
+
+async function openListView() {
+  showView("list");
+  setListStatus("読み込み中...");
+  try {
+    const items = await fetchMyReservations();
+    renderReservationList(items);
+    setListStatus(items.length ? `${items.length}件` : "");
+    log("予約一覧を表示したよ");
+  } catch (e) {
+    setListStatus("取得できませんでした");
+    if (listRoot)
+      listRoot.innerHTML = `<div style="opacity:.7;">${e?.message || e}</div>`;
+    log(`ERROR: ${e?.message || e}`);
+  }
 }
 
 // ====== main ======
