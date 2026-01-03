@@ -445,6 +445,37 @@ function fmtYmdJa(ymd) {
   return `${y}年${mo}月${d}日`;
 }
 
+function fmtYmdJaWithDow(ymd) {
+  // "2026-01-05" を "2026年1月5日(月)" に
+  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return ymd || "";
+
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+
+  // JST固定で曜日出す
+  const dt = new Date(Date.UTC(y, mo - 1, d)); // 日付だけをUTCで作る
+  const dow = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    weekday: "short",
+  }).format(dt);
+
+  return `${y}年${mo}月${d}日(${dow})`;
+}
+
+function ymdFromIso(iso) {
+  // ISO -> "YYYY-MM-DD" を返す（JST固定）
+  if (!iso) return "";
+  const dt = new Date(iso);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo", // ★ここが大事
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(dt); // "YYYY-MM-DD"
+}
+
 function fmtTimeRange(item) {
   // item.start/end があればそれ優先。なければ slotId から
   const startHm = hmFromIso(item.start) || slotIdToHm(item.slotId);
@@ -470,6 +501,7 @@ async function fetchMyReservations() {
   }
   throw new Error("予約一覧APIが見つからない（GAS側のaction名を確認してね）");
 }
+
 function renderReservationList(items) {
   if (!listRoot) return;
   listRoot.innerHTML = "";
@@ -482,23 +514,38 @@ function renderReservationList(items) {
   const sorted = [...items].reverse();
 
   sorted.forEach((it) => {
-    const ymd =
+    // 日付（YYYY-MM-DD）をできるだけ確実に作る
+    const ymdRaw =
       it.ymd ||
-      (it.date &&
-        (it.date.includes("T") ? ymdFromIsoJa(it.date) : fmtYmdJa(it.date))) ||
-      (it.start ? ymdFromIsoJa(it.start) : "") ||
-      (it.slotId ? fmtYmdJa(slotIdToYmd(it.slotId)) : "");
+      (it.date
+        ? it.date.includes("T")
+          ? ymdFromIso(it.date)
+          : it.date
+        : "") ||
+      (it.start ? ymdFromIso(it.start) : "") ||
+      (it.slotId ? slotIdToYmd(it.slotId) : "");
 
+    const ymdLabel = fmtYmdJaWithDow(ymdRaw);
+
+    // 時間
     const time = fmtTimeRange(it);
-    const rid = it.reservationId || it.id || "";
-    const status = it.status || "予約済み";
 
-    const statusLabel = status === "予約済み" ? "🟢 予約済み" : "⚪️ 完了";
+    // 予約ID
+    const rid = it.reservationId || it.id || "";
+
+    // ステータス
+    const status = it.status || "予約済み";
+    const s = String(status || "");
+    const statusLabel = s.includes("予約")
+      ? "🟢 予約済み"
+      : s.includes("完了")
+      ? "⚪️ 完了"
+      : `⚪️ ${s || "不明"}`;
 
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <div style="font-weight:700;">${ymd} / ${time}</div>
+      <div style="font-weight:700;">${ymdLabel} / ${time}</div>
       <div style="margin-top:6px; font-size:13px;">${statusLabel}</div>
       ${
         rid
