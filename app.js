@@ -515,6 +515,24 @@ function renderReservationList(items) {
   });
 }
 
+async function openListView() {
+  showView("list");
+  setListStatus("読み込み中...");
+
+  try {
+    const items = await fetchMyReservations();
+    renderReservationList(items);
+    setListStatus(items.length ? `${items.length}件` : "");
+    log("予約一覧を表示したよ");
+  } catch (e) {
+    setListStatus("取得できませんでした");
+    if (listRoot) {
+      listRoot.innerHTML = `<div style="opacity:.7;">${e?.message || e}</div>`;
+    }
+    log(`ERROR: ${e?.message || e}`);
+  }
+}
+
 // ====== main ======
 async function run() {
   if (!window.liff) {
