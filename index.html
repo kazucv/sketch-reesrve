@@ -199,8 +199,15 @@
     <!-- View: Done -->
     <section id="viewDone" class="hidden">
       <div class="section-title">完了</div>
-      <div class="done-box" id="doneText"></div>
-      <button id="doneToCalendar" class="primary">日付選択へ戻る</button>
+
+      <div class="card" id="doneSummary"></div>
+
+      <button id="doneToCalendar" class="primary">別日を予約する</button>
+      <button id="doneToSlots" class="primary" style="margin-top: 10px">
+        同じ日の空き時間を見る
+      </button>
+
+      <div class="hint">※予約内容の確認・キャンセル機能は次で追加しよう</div>
     </section>
 
     <!-- flatpickr JS -->

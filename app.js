@@ -59,6 +59,29 @@ function showView(name) {
   if (name === "done") viewDone.classList.remove("hidden");
 }
 
+function showDone(reserveResult) {
+  // 予約完了後に入力をクリア（任意）
+  nameInput.value = "";
+  telInput.value = "";
+  noteInput.value = "";
+
+  const rid = reserveResult?.reservationId || "(不明)";
+
+  const slot = selectedSlot;
+  const startHm = slot ? hmFromIso(slot.start) || slotIdToHm(slot.slotId) : "";
+  const endHm = slot ? hmFromIso(slot.end) || "" : "";
+
+  doneText.innerHTML = `
+    <div style="font-weight:700; font-size:18px;">予約できたよ ✅</div>
+    <div style="margin-top:8px;" class="sub">予約ID: ${rid}</div>
+    <div style="margin-top:8px;" class="sub">日付: ${selectedDate || ""}</div>
+    <div style="margin-top:4px;" class="sub">時間: ${startHm} 〜 ${endHm}</div>
+  `;
+
+  showView("done");
+  log(`予約OK: ${rid}`);
+}
+
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -355,13 +378,7 @@ async function reserveSelected() {
   }
 
   // 完了画面
-  const rid = r.data.reservationId;
-  doneText.innerHTML = `
-    <div style="font-weight:700; font-size:18px;">予約できたよ ✅</div>
-    <div style="margin-top:8px;" class="sub">予約ID: ${rid}</div>
-  `;
-  showView("done");
-  log(`予約OK: ${rid}`);
+  showDone(r.data);
 
   // 予約後：その月の枠を更新（押し戻し時に埋まり反映）
   const ym = toYmFromYmd(selectedDate);
@@ -411,6 +428,11 @@ async function run() {
     });
 
     doneToCalendar?.addEventListener("click", () => {
+      selectedSlot = null;
+      // 入力を残したくないなら
+      // nameInput.value = "";
+      // telInput.value = "";
+      // noteInput.value = "";
       showView("calendar");
       log("日付を選んでね");
     });
