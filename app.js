@@ -122,6 +122,15 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
+function ymdFromIsoJa(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const dd = d.getDate();
+  return `${y}年${m}月${dd}日`;
+}
+
 function toYmd(dateObj) {
   const y = dateObj.getFullYear();
   const m = pad2(dateObj.getMonth() + 1);
@@ -461,7 +470,6 @@ async function fetchMyReservations() {
   }
   throw new Error("予約一覧APIが見つからない（GAS側のaction名を確認してね）");
 }
-
 function renderReservationList(items) {
   if (!listRoot) return;
   listRoot.innerHTML = "";
@@ -471,11 +479,16 @@ function renderReservationList(items) {
     return;
   }
 
-  // 新しい順
   const sorted = [...items].reverse();
 
   sorted.forEach((it) => {
-    const ymd = it.date || slotIdToYmd(it.slotId) || "";
+    const ymd =
+      it.ymd ||
+      (it.date &&
+        (it.date.includes("T") ? ymdFromIsoJa(it.date) : fmtYmdJa(it.date))) ||
+      (it.start ? ymdFromIsoJa(it.start) : "") ||
+      (it.slotId ? fmtYmdJa(slotIdToYmd(it.slotId)) : "");
+
     const time = fmtTimeRange(it);
     const rid = it.reservationId || it.id || "";
     const status = it.status || "予約済み";
@@ -485,7 +498,7 @@ function renderReservationList(items) {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <div style="font-weight:700;">${fmtYmdJa(ymd)} / ${time}</div>
+      <div style="font-weight:700;">${ymd} / ${time}</div>
       <div style="margin-top:6px; font-size:13px;">${statusLabel}</div>
       ${
         rid
@@ -494,29 +507,12 @@ function renderReservationList(items) {
       }
     `;
 
-    // 将来の詳細・キャンセル導線用に「押せる」余地を作る（今はconsoleだけ）
     card.addEventListener("click", () => {
       console.log("予約詳細", it);
     });
 
     listRoot.appendChild(card);
   });
-}
-
-async function openListView() {
-  showView("list");
-  setListStatus("読み込み中...");
-  try {
-    const items = await fetchMyReservations();
-    renderReservationList(items);
-    setListStatus(items.length ? `${items.length}件` : "");
-    log("予約一覧を表示したよ");
-  } catch (e) {
-    setListStatus("取得できませんでした");
-    if (listRoot)
-      listRoot.innerHTML = `<div style="opacity:.7;">${e?.message || e}</div>`;
-    log(`ERROR: ${e?.message || e}`);
-  }
 }
 
 // ====== main ======

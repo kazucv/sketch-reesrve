@@ -17,6 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ja.js"></script>
 
     <style>
+      /* （ここはカズのCSSそのままでOK） */
       :root {
         --bg: #ffffff;
         --text: #111;
@@ -28,7 +29,6 @@
         --radius-lg: 22px;
         --tap: rgba(11, 91, 211, 0.12);
       }
-
       * {
         box-sizing: border-box;
       }
@@ -42,19 +42,15 @@
         color: var(--text);
         font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
         -webkit-font-smoothing: antialiased;
-        padding-bottom: 92px; /* tabbar space */
+        padding-bottom: 92px;
       }
-
       .hidden {
         display: none !important;
       }
-
-      /* App frame */
       .app {
         min-height: 100%;
       }
 
-      /* Header */
       .header {
         position: sticky;
         top: 0;
@@ -88,7 +84,6 @@
         margin-top: 4px;
       }
 
-      /* Status (debug / guidance) */
       #status {
         max-width: 720px;
         margin: 0 auto;
@@ -98,7 +93,6 @@
         white-space: pre-wrap;
       }
 
-      /* Main content */
       .content {
         max-width: 720px;
         margin: 0 auto;
@@ -117,7 +111,6 @@
         margin: 0 0 14px;
       }
 
-      /* Topbar back */
       .topbar {
         display: flex;
         align-items: center;
@@ -136,7 +129,6 @@
         transform: translateY(1px);
       }
 
-      /* Cards */
       .card {
         background: var(--card);
         border-radius: var(--radius-lg);
@@ -144,11 +136,9 @@
         box-shadow: var(--shadow);
       }
 
-      /* Calendar area */
       #calendar {
         margin-top: 10px;
       }
-      /* flatpickr tweaks: iOS-ish */
       .flatpickr-calendar {
         width: 100% !important;
         border: 0 !important;
@@ -184,7 +174,6 @@
         border-color: rgba(0, 0, 0, 0.3) !important;
       }
 
-      /* Slots */
       #slotCount {
         color: var(--muted);
         font-size: 14px;
@@ -216,7 +205,6 @@
         transform: translateY(1px);
       }
 
-      /* Form */
       .label {
         margin-top: 14px;
         color: var(--muted);
@@ -238,6 +226,7 @@
         min-height: 140px;
         resize: vertical;
       }
+
       .primary {
         width: 100%;
         border: 0;
@@ -258,7 +247,6 @@
         margin-top: 10px;
       }
 
-      /* Done */
       .done-actions {
         display: grid;
         gap: 10px;
@@ -278,7 +266,6 @@
         transform: translateY(1px);
       }
 
-      /* Tabbar */
       .tabbar {
         position: fixed;
         left: 0;
@@ -323,7 +310,6 @@
         transform: translateY(1px);
       }
 
-      /* Hidden input for flatpickr (we show inline calendar in #calendar) */
       #date {
         position: absolute;
         opacity: 0;
@@ -336,7 +322,6 @@
 
   <body>
     <div class="app">
-      <!-- Header -->
       <header class="header">
         <div class="header-inner">
           <div class="brand">
@@ -355,15 +340,11 @@
         </div>
       </header>
 
-      <!-- Status -->
       <div id="status">loading...</div>
 
-      <!-- Content -->
       <main class="content">
-        <!-- hidden input (flatpickr target) -->
         <input id="date" />
 
-        <!-- View: Calendar -->
         <section id="viewCalendar">
           <div class="title">日付選択</div>
           <div class="subtitle">今日以降の予約可能日を選んでね</div>
@@ -372,7 +353,6 @@
           </div>
         </section>
 
-        <!-- View: Slots -->
         <section id="viewSlots" class="hidden">
           <div class="topbar">
             <button id="backToCalendar" class="back">← 日付選択</button>
@@ -392,7 +372,6 @@
           </div>
         </section>
 
-        <!-- View: Form -->
         <section id="viewForm" class="hidden">
           <div class="topbar">
             <button id="backToSlots" class="back">← 空き時間</button>
@@ -420,7 +399,6 @@
           <div class="hint">お名前と電話番号は必須です</div>
         </section>
 
-        <!-- View: Done -->
         <section id="viewDone" class="hidden">
           <div class="title">完了</div>
           <div class="card" id="doneSummary"></div>
@@ -433,16 +411,13 @@
           </div>
         </section>
 
-        <!-- View: List -->
         <section id="viewList" class="hidden">
-          <div class="section-title">予約一覧</div>
+          <div class="title">予約一覧</div>
           <div id="listStatus" style="opacity: 0.7; margin: 8px 0 14px"></div>
           <div id="listRoot"></div>
         </section>
-
       </main>
 
-      <!-- Tabbar -->
       <nav class="tabbar" aria-label="tabbar">
         <div class="tabbar-inner">
           <button id="tabReserve" class="tab is-active" type="button">
@@ -460,7 +435,6 @@
         </div>
       </nav>
     </div>
-    </script>
 
     <script src="./app.js?v=20260103_6"></script>
   </body>
