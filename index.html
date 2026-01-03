@@ -436,21 +436,6 @@
       </nav>
     </div>
 
-    <script>
-      (async () => {
-        try {
-          const res = await fetch("./version.txt", { cache: "no-store" });
-          const v = (await res.text()).trim() || String(Date.now());
-          const s = document.createElement("script");
-          s.src = `./app.js?v=${encodeURIComponent(v)}`;
-          document.body.appendChild(s);
-        } catch (e) {
-          // 最悪でも動く保険
-          const s = document.createElement("script");
-          s.src = `./app.js?v=${Date.now()}`;
-          document.body.appendChild(s);
-        }
-      })();
-    </script>
+    <script src="./app.js?v=20260103_7"></script>
   </body>
 </html>
