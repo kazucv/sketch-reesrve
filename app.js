@@ -587,39 +587,51 @@ function renderReservationList(items) {
       }
     `;
 
-    card.addEventListener("click", async () => {
+    card.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) {
+        console.log("予約詳細", it);
+        return;
+      }
+
       const targetRid = it.reservationId || it.id;
       if (!targetRid) return;
 
-      const ok = confirm(
-        `この予約をキャンセルしますか？\n\n${ymdLabel} / ${time}`
-      );
-      if (!ok) return;
+      const action = btn.dataset.action;
 
-      try {
-        setListStatus("キャンセル中...");
+      if (action === "cancel") {
+        const ok = confirm(
+          `本当にキャンセルしますか？\n\n${ymdLabel} / ${time}\n予約ID: ${targetRid}`
+        );
+        if (!ok) return;
 
-        const { data } = await postJson(GAS_URL, {
-          action: "cancelReservation",
-          userId: profile.userId,
-          reservationId: targetRid, // ←ここ重要
-        });
+        try {
+          setListStatus("キャンセル中...");
 
-        if (!data?.ok) {
-          const msg = data?.detail
-            ? `${data.message}: ${data.detail}`
-            : data?.message || "キャンセルに失敗しました";
-          throw new Error(msg);
+          const { data } = await postJson(GAS_URL, {
+            action: "cancelReservation",
+            userId: profile.userId,
+            reservationId: targetRid,
+          });
+
+          if (!data?.ok)
+            throw new Error(data?.message || "キャンセルに失敗しました");
+
+          const items = await fetchMyReservations();
+          renderReservationList(items);
+          setListStatus(items.length ? `${items.length}件` : "");
+          log("キャンセルしたよ");
+        } catch (err) {
+          setListStatus("キャンセルできませんでした");
+          log(`ERROR: ${err?.message || err}`);
         }
+      }
 
-        const items = await fetchMyReservations();
-        renderReservationList(items);
-        setListStatus(items.length ? `${items.length}件` : "");
-
-        log("キャンセルしたよ");
-      } catch (e) {
-        setListStatus("キャンセルできませんでした");
-        log(`ERROR: ${e?.message || e}`);
+      if (action === "rebook") {
+        // ひとまず予約画面へ戻す（最小）
+        setActiveTab("reserve");
+        showView("calendar");
+        log(`もう一度予約しよう：${ymdLabel}`);
       }
     });
 
