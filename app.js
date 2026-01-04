@@ -523,9 +523,27 @@ function renderReservationList(items) {
   }
 
   const sorted = [...items].sort((a, b) => {
-    const da = normalizeYmd(a.ymd || a.date || "");
-    const db = normalizeYmd(b.ymd || b.date || "");
-    return da.localeCompare(db);
+    const aYmd =
+      a.ymd ||
+      (a.date
+        ? String(a.date).includes("T")
+          ? ymdFromIso(a.date)
+          : a.date
+        : "") ||
+      (a.start ? ymdFromIso(a.start) : "") ||
+      (a.slotId ? slotIdToYmd(a.slotId) : "");
+
+    const bYmd =
+      b.ymd ||
+      (b.date
+        ? String(b.date).includes("T")
+          ? ymdFromIso(b.date)
+          : b.date
+        : "") ||
+      (b.start ? ymdFromIso(b.start) : "") ||
+      (b.slotId ? slotIdToYmd(b.slotId) : "");
+
+    return normalizeYmd(aYmd).localeCompare(normalizeYmd(bYmd));
   });
 
   sorted.forEach((it) => {
@@ -533,7 +551,7 @@ function renderReservationList(items) {
     const ymdRaw =
       it.ymd ||
       (it.date
-        ? it.date.includes("T")
+        ? String(it.date).includes("T")
           ? ymdFromIso(it.date)
           : it.date
         : "") ||
@@ -569,8 +587,37 @@ function renderReservationList(items) {
       }
     `;
 
-    card.addEventListener("click", () => {
-      console.log("予約詳細", it);
+    card.addEventListener("click", async () => {
+      const targetRid = it.reservationId || it.id;
+      if (!targetRid) return;
+
+      const ok = confirm(
+        `この予約をキャンセルしますか？\n\n${ymdLabel} / ${time}`
+      );
+      if (!ok) return;
+
+      try {
+        setListStatus("キャンセル中...");
+
+        const { data } = await postJson(GAS_URL, {
+          action: "cancelReservation",
+          userId: profile.userId,
+          reservationId: targetRid, // ←ここ重要
+        });
+
+        if (!data?.ok) {
+          throw new Error(data?.message || "キャンセルに失敗しました");
+        }
+
+        const items = await fetchMyReservations();
+        renderReservationList(items);
+        setListStatus(items.length ? `${items.length}件` : "");
+
+        log("キャンセルしたよ");
+      } catch (e) {
+        setListStatus("キャンセルできませんでした");
+        log(`ERROR: ${e?.message || e}`);
+      }
     });
 
     listRoot.appendChild(card);
