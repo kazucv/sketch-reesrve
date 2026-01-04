@@ -38,6 +38,9 @@
       body {
         height: 100%;
         background: var(--bg);
+        padding-bottom: calc(
+          var(--tabbar-h) + env(safe-area-inset-bottom, 0px)
+        );
       }
       body {
         margin: 0;
