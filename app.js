@@ -208,6 +208,10 @@ function resetNoteOnly() {
 
 // ====== network ======
 async function postJson(url, payload, timeoutMs = 10000) {
+  // ✅ 毎回 accessToken を付ける（userIdは送ってもいいけど信用されない想定）
+  if (window.liff && liff.isLoggedIn && liff.isLoggedIn()) {
+    payload.accessToken = liff.getAccessToken();
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -602,7 +606,13 @@ function fmtYmdJa(ymd) {
 }
 
 function normalizeYmd(ymd) {
-  // "2026/01/05" → "2026-01-05"
+  if (ymd instanceof Date && !isNaN(ymd.getTime())) {
+    // Date → "YYYY-MM-DD" (JST)
+    const y = ymd.getFullYear();
+    const m = String(ymd.getMonth() + 1).padStart(2, "0");
+    const d = String(ymd.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
   return String(ymd || "").replaceAll("/", "-");
 }
 
