@@ -206,6 +206,23 @@ async function postJson(url, payload, timeoutMs = 10000) {
   }
 }
 
+async function fetchMyReservations() {
+  const payload = { action: "myReservations", userId: profile.userId };
+  const { data } = await postJson(GAS_URL, payload, 10000);
+
+  if (!data?.ok) {
+    throw new Error(data?.message || "予約一覧の取得に失敗しました");
+  }
+
+  // GAS側は { ok:true, items:[...] } を返してるのでこれでOK
+  if (Array.isArray(data.items)) return data.items;
+
+  // 保険（将来返却キーが変わった時用）
+  if (Array.isArray(data.reservations)) return data.reservations;
+
+  return [];
+}
+
 async function fetchSlotsYm(ym) {
   if (slotsCache.has(ym)) return slotsCache.get(ym);
 
