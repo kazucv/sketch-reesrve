@@ -207,7 +207,11 @@ async function postJson(url, payload, timeoutMs = 10000) {
 }
 
 async function fetchMyReservations() {
-  const payload = { action: "myReservations", userId: profile.userId };
+  const payload = {
+    action: "myReservations",
+    userId: profile.userId,
+    includeCanceled: true,
+  };
   const { data } = await postJson(GAS_URL, payload, 10000);
 
   if (!data?.ok) {
