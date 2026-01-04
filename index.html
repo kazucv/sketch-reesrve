@@ -410,10 +410,24 @@
           <div class="label">メモ</div>
           <textarea id="note" placeholder="備考（任意）"></textarea>
 
-          <button id="confirmBtn" class="primary">
-            確認へ（仮：予約実行）
-          </button>
+          <button id="confirmBtn" class="primary">内容を確認する</button>
           <div class="hint">お名前と電話番号は必須です</div>
+        </section>
+
+        <section id="viewConfirm" class="hidden">
+          <div class="topbar">
+            <button id="confirmBackBtn" class="back">← 戻って修正</button>
+          </div>
+
+          <div class="title">確認</div>
+          <div class="subtitle">内容を確認してね</div>
+
+          <div class="card" id="confirmSummary"></div>
+
+          <button id="confirmSubmitBtn" class="primary">
+            この内容で予約する
+          </button>
+          <div class="hint">予約を確定すると、カレンダーに登録されます</div>
         </section>
 
         <section id="viewDone" class="hidden">
