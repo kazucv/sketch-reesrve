@@ -265,30 +265,32 @@ async function fetchMyReservations() {
   return [];
 }
 
-async function fetchSlotsYm(ym, { force = false } = {}) {
+async function fetchSlotsYm(ym, opts = {}) {
   if (!profile?.userId) throw new Error("ユーザー情報が取得できていません");
 
-  // forceでないなら既存キャッシュを活かす
+  const force = !!opts.force;
+
+  // force の時はフロントキャッシュを無視
   if (!force) {
     if (slotsCache.has(ym)) return slotsCache.get(ym);
     if (slotsInFlight.has(ym)) return await slotsInFlight.get(ym);
   } else {
-    // force の時はUI側キャッシュも無視したい
     slotsCache.delete(ym);
     slotsInFlight.delete(ym);
+    invalidateAvailableDaysSet();
   }
 
   const mySeq = ++slotsReqSeq;
 
   const payload = {
     action: "getSlots",
-    userId: profile.userId,
     ym,
-    force: force, // ✅ 追加（GAS側キャッシュも無視させる）
+    force, // ✅ ここが重要
   };
 
   const p = (async () => {
     const { data, aborted } = await postJson(GAS_URL, payload, 25000);
+
     if (aborted) return null;
     if (mySeq !== slotsReqSeq) return null;
 
@@ -311,13 +313,6 @@ async function fetchSlotsYm(ym, { force = false } = {}) {
 }
 
 async function refreshSlotsYm(ym) {
-  // ここは「必ず取り直す」
-  ++slotsReqSeq;
-  invalidateAvailableDaysSet();
-  return await fetchSlotsYm(ym, { force: true }); // ✅
-}
-
-async function refreshSlotsYm(ym) {
   // ✅ キャッシュとin-flight両方消して “必ず取り直す”
   slotsCache.delete(ym);
   slotsInFlight.delete(ym);
@@ -326,7 +321,8 @@ async function refreshSlotsYm(ym) {
   // ✅ 以後のレスポンスを最新世代に寄せる（巻き戻り防止を強める）
   ++slotsReqSeq;
 
-  return await fetchSlotsYm(ym);
+  // ✅ GAS側も強制リフレッシュ（キャッシュ事故を完全に潰す）
+  return await fetchSlotsYm(ym, { force: true });
 }
 
 // ====== calendar ======
@@ -341,6 +337,8 @@ function buildAvailableDaysSet() {
   }
   return set;
 }
+
+let didForceWarm = false;
 
 function initFlatpickr() {
   if (!window.flatpickr) {
@@ -369,11 +367,15 @@ function initFlatpickr() {
 
       try {
         log("枠を取得中...");
-        const slots = await fetchSlotsYm(ym);
+
+        const slots = await fetchSlotsYm(ym, { force: !didForceWarm });
+        didForceWarm = true;
+
         if (slots === null) {
           log("通信が不安定みたい。もう一度試してね");
           return;
         }
+
         fp.redraw();
         log("日付を選んでね");
       } catch (e) {
@@ -822,6 +824,12 @@ async function openListView() {
 }
 
 // ====== main ======
+function ymdToYm(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}${m}`;
+}
+
 async function run() {
   if (!window.liff) {
     log("LIFF SDKが読み込めてない…");
