@@ -522,54 +522,35 @@ function renderReservationList(items) {
     return;
   }
 
-  const sorted = [...items].sort((a, b) => {
-    const aYmd =
-      a.ymd ||
-      (a.date
-        ? String(a.date).includes("T")
-          ? ymdFromIso(a.date)
-          : a.date
-        : "") ||
-      (a.start ? ymdFromIso(a.start) : "") ||
-      (a.slotId ? slotIdToYmd(a.slotId) : "");
+  const pickYmd = (x) =>
+    x.ymd ||
+    (x.date
+      ? String(x.date).includes("T")
+        ? ymdFromIso(x.date)
+        : x.date
+      : "") ||
+    (x.start ? ymdFromIso(x.start) : "") ||
+    (x.slotId ? slotIdToYmd(x.slotId) : "");
 
-    const bYmd =
-      b.ymd ||
-      (b.date
-        ? String(b.date).includes("T")
-          ? ymdFromIso(b.date)
-          : b.date
-        : "") ||
-      (b.start ? ymdFromIso(b.start) : "") ||
-      (b.slotId ? slotIdToYmd(b.slotId) : "");
-
-    return normalizeYmd(aYmd).localeCompare(normalizeYmd(bYmd));
-  });
+  const sorted = [...items].sort((a, b) =>
+    normalizeYmd(pickYmd(a)).localeCompare(normalizeYmd(pickYmd(b)))
+  );
 
   sorted.forEach((it) => {
-    // 日付（YYYY-MM-DD）をできるだけ確実に作る
-    const ymdRaw =
-      it.ymd ||
-      (it.date
-        ? String(it.date).includes("T")
-          ? ymdFromIso(it.date)
-          : it.date
-        : "") ||
-      (it.start ? ymdFromIso(it.start) : "") ||
-      (it.slotId ? slotIdToYmd(it.slotId) : "");
-
+    const ymdRaw = pickYmd(it);
     const ymdLabel = fmtYmdJaWithDow(normalizeYmd(ymdRaw || ""));
-
-    // 時間
     const time = fmtTimeRange(it);
 
-    // 予約ID
     const rid = it.reservationId || it.id || "";
-
-    // ステータス
     const status = it.status || "予約済み";
     const s = String(status || "");
-    const statusLabel = s.includes("予約")
+
+    const isCanceled =
+      s.includes("キャンセル") || s.includes("取消") || s.includes("cancel");
+
+    const statusLabel = isCanceled
+      ? "⚫️ キャンセル"
+      : s.includes("予約")
       ? "🟢 予約済み"
       : s.includes("完了")
       ? "⚪️ 完了"
@@ -577,6 +558,8 @@ function renderReservationList(items) {
 
     const card = document.createElement("div");
     card.className = "card";
+
+    // ✅ 最初からボタンを描画しておく
     card.innerHTML = `
       <div style="font-weight:700;">${ymdLabel} / ${time}</div>
       <div style="margin-top:6px; font-size:13px;">${statusLabel}</div>
@@ -585,6 +568,13 @@ function renderReservationList(items) {
           ? `<div style="opacity:.5; margin-top:6px; font-size:12px;">予約ID: ${rid}</div>`
           : ""
       }
+      <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+        ${
+          isCanceled
+            ? `<button type="button" class="ghost-btn" data-action="rebook">もう一度予約する</button>`
+            : `<button type="button" class="danger-btn" data-action="cancel">キャンセル</button>`
+        }
+      </div>
     `;
 
     card.addEventListener("click", async (e) => {
@@ -594,10 +584,9 @@ function renderReservationList(items) {
         return;
       }
 
+      const action = btn.dataset.action;
       const targetRid = it.reservationId || it.id;
       if (!targetRid) return;
-
-      const action = btn.dataset.action;
 
       if (action === "cancel") {
         const ok = confirm(
@@ -617,9 +606,9 @@ function renderReservationList(items) {
           if (!data?.ok)
             throw new Error(data?.message || "キャンセルに失敗しました");
 
-          const items = await fetchMyReservations();
-          renderReservationList(items);
-          setListStatus(items.length ? `${items.length}件` : "");
+          const items2 = await fetchMyReservations();
+          renderReservationList(items2);
+          setListStatus(items2.length ? `${items2.length}件` : "");
           log("キャンセルしたよ");
         } catch (err) {
           setListStatus("キャンセルできませんでした");
@@ -628,7 +617,6 @@ function renderReservationList(items) {
       }
 
       if (action === "rebook") {
-        // ひとまず予約画面へ戻す（最小）
         setActiveTab("reserve");
         showView("calendar");
         log(`もう一度予約しよう：${ymdLabel}`);
