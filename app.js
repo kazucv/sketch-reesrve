@@ -265,30 +265,31 @@ async function fetchMyReservations() {
   return [];
 }
 
-async function fetchSlotsYm(ym) {
+async function fetchSlotsYm(ym, { force = false } = {}) {
   if (!profile?.userId) throw new Error("ユーザー情報が取得できていません");
-  // 既に結果があるならそれを返す
-  if (slotsCache.has(ym)) return slotsCache.get(ym);
 
-  // ✅ 取得中なら同じPromiseを待つ（多重リクエスト防止）
-  if (slotsInFlight.has(ym)) return await slotsInFlight.get(ym);
+  // forceでないなら既存キャッシュを活かす
+  if (!force) {
+    if (slotsCache.has(ym)) return slotsCache.get(ym);
+    if (slotsInFlight.has(ym)) return await slotsInFlight.get(ym);
+  } else {
+    // force の時はUI側キャッシュも無視したい
+    slotsCache.delete(ym);
+    slotsInFlight.delete(ym);
+  }
 
-  const mySeq = ++slotsReqSeq; // ✅ このリクエストの番号
+  const mySeq = ++slotsReqSeq;
 
   const payload = {
     action: "getSlots",
     userId: profile.userId,
     ym,
+    force: force, // ✅ 追加（GAS側キャッシュも無視させる）
   };
 
-  // ✅ 実処理をPromise化してin-flightに登録
   const p = (async () => {
     const { data, aborted } = await postJson(GAS_URL, payload, 25000);
-
-    // ✅ タイムアウトで中断 → null
     if (aborted) return null;
-
-    // ✅ 古いレスポンス → null
     if (mySeq !== slotsReqSeq) return null;
 
     if (!data?.ok || !Array.isArray(data.slots)) {
@@ -305,9 +306,15 @@ async function fetchSlotsYm(ym) {
   try {
     return await p;
   } finally {
-    // ✅ 成功でも失敗でも必ず解除（詰まり防止）
     slotsInFlight.delete(ym);
   }
+}
+
+async function refreshSlotsYm(ym) {
+  // ここは「必ず取り直す」
+  ++slotsReqSeq;
+  invalidateAvailableDaysSet();
+  return await fetchSlotsYm(ym, { force: true }); // ✅
 }
 
 async function refreshSlotsYm(ym) {
