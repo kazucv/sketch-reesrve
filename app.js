@@ -235,7 +235,11 @@ async function fetchMyReservations() {
 }
 
 async function fetchSlotsYm(ym) {
+  // 既に結果があるならそれを返す
   if (slotsCache.has(ym)) return slotsCache.get(ym);
+
+  // ✅ 取得中なら同じPromiseを待つ（多重リクエスト防止）
+  if (slotsInFlight.has(ym)) return await slotsInFlight.get(ym);
 
   const mySeq = ++slotsReqSeq; // ✅ このリクエストの番号
 
@@ -245,26 +249,42 @@ async function fetchSlotsYm(ym) {
     ym,
   };
 
-  // ✅ 重い月があるので長め（20〜30秒推奨）
-  const { data, aborted } = await postJson(GAS_URL, payload, 25000);
+  // ✅ 実処理をPromise化してin-flightに登録
+  const p = (async () => {
+    const { data, aborted } = await postJson(GAS_URL, payload, 25000);
 
-  // ✅ タイムアウトで中断されたら、静かに終了（UIは前のままでもOK）
-  if (aborted) return [];
+    // ✅ タイムアウトで中断されたら、静かに終了（UIは前のままでもOK）
+    if (aborted) return [];
 
-  // ✅ 古いレスポンスなら捨てる（表示巻き戻り防止）
-  if (mySeq !== slotsReqSeq) return [];
+    // ✅ 古いレスポンスなら捨てる（表示巻き戻り防止）
+    if (mySeq !== slotsReqSeq) return [];
 
-  if (!data?.ok || !Array.isArray(data.slots)) {
-    throw new Error(`getSlots NG: ${JSON.stringify(data)}`);
+    if (!data?.ok || !Array.isArray(data.slots)) {
+      throw new Error(`getSlots NG: ${JSON.stringify(data)}`);
+    }
+
+    slotsCache.set(ym, data.slots);
+    return data.slots;
+  })();
+
+  slotsInFlight.set(ym, p);
+
+  try {
+    return await p;
+  } finally {
+    // ✅ 成功でも失敗でも必ず解除（詰まり防止）
+    slotsInFlight.delete(ym);
   }
-
-  slotsCache.set(ym, data.slots);
-  return data.slots;
 }
 
 async function refreshSlotsYm(ym) {
-  // キャッシュだけ消して取り直す（世代番号は fetchSlotsYm 側で進む）
+  // ✅ キャッシュとin-flight両方消して “必ず取り直す”
   slotsCache.delete(ym);
+  slotsInFlight.delete(ym);
+
+  // ✅ 以後のレスポンスを最新世代に寄せる（巻き戻り防止を強める）
+  ++slotsReqSeq;
+
   return await fetchSlotsYm(ym);
 }
 
