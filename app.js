@@ -477,29 +477,14 @@ function ymdFromIso(iso) {
 }
 
 function fmtTimeRange(item) {
-  // item.start/end があればそれ優先。なければ slotId から
-  const startHm = hmFromIso(item.start) || slotIdToHm(item.slotId);
-  const endHm = hmFromIso(item.end) || "";
-  return endHm ? `${startHm} 〜 ${endHm}` : startHm;
-}
+  // 1) GAS myReservations が返す time を最優先（"10:00〜11:00"）
+  if (item?.time) return String(item.time).replace(/\s/g, "");
 
-async function fetchMyReservations() {
-  // GAS側の action 名が揺れてる可能性があるから、2候補でトライ（保険）
-  const candidates = ["getMyReservations", "myReservations", "getReservations"];
+  // 2) start/end があれば ISO から作る
+  const startHm = hmFromIso(item?.start) || slotIdToHm(item?.slotId);
+  const endHm = hmFromIso(item?.end) || "";
 
-  for (const action of candidates) {
-    try {
-      const payload = { action, userId: profile.userId };
-      const { data } = await postJson(GAS_URL, payload, 10000);
-      if (data?.ok && Array.isArray(data.items)) return data.items;
-      if (data?.ok && Array.isArray(data.reservations))
-        return data.reservations;
-      // ok:false は次候補へ
-    } catch (e) {
-      // 次候補へ
-    }
-  }
-  throw new Error("予約一覧APIが見つからない（GAS側のaction名を確認してね）");
+  return endHm ? `${startHm}〜${endHm}` : startHm || "";
 }
 
 function renderReservationList(items) {
