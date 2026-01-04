@@ -48,6 +48,7 @@ let fp = null;
 
 // ym -> slots[]
 const slotsCache = new Map();
+let slotsReqSeq = 0; // ✅ 月の空き取得の「世代番号」
 
 // slotId/start/end を想定
 let selectedDate = null; // "YYYY-MM-DD"
@@ -201,6 +202,12 @@ async function postJson(url, payload, timeoutMs = 10000) {
       throw new Error(`JSON parse failed: ${text.slice(0, 200)}`);
     }
     return { status: res.status, data };
+  } catch (e) {
+    // ✅ 中断は「よくある」ので静かに扱う
+    if (e?.name === "AbortError") {
+      return { status: 0, data: null, aborted: true };
+    }
+    throw e;
   } finally {
     clearTimeout(timer);
   }
@@ -230,13 +237,23 @@ async function fetchMyReservations() {
 async function fetchSlotsYm(ym) {
   if (slotsCache.has(ym)) return slotsCache.get(ym);
 
+  const mySeq = ++slotsReqSeq; // ✅ このリクエストの番号
+
   const payload = {
     action: "getSlots",
     userId: profile.userId,
     ym,
   };
 
-  const { data } = await postJson(GAS_URL, payload);
+  // ✅ 重い月があるので長め（20〜30秒推奨）
+  const { data, aborted } = await postJson(GAS_URL, payload, 25000);
+
+  // ✅ タイムアウトで中断されたら、静かに終了（UIは前のままでもOK）
+  if (aborted) return [];
+
+  // ✅ 古いレスポンスなら捨てる（表示巻き戻り防止）
+  if (mySeq !== slotsReqSeq) return [];
+
   if (!data?.ok || !Array.isArray(data.slots)) {
     throw new Error(`getSlots NG: ${JSON.stringify(data)}`);
   }
@@ -246,6 +263,7 @@ async function fetchSlotsYm(ym) {
 }
 
 async function refreshSlotsYm(ym) {
+  // キャッシュだけ消して取り直す（世代番号は fetchSlotsYm 側で進む）
   slotsCache.delete(ym);
   return await fetchSlotsYm(ym);
 }
@@ -286,23 +304,37 @@ function initFlatpickr() {
 
     onReady: async (selectedDates) => {
       selectedDate = toYmd(selectedDates[0] || today);
-      // 初期月を取得
       const ym = toYmFromYmd(selectedDate);
-      await fetchSlotsYm(ym);
 
-      // “枠がある日だけ” 見た目で分かるように（薄くハイライト）
-      const available = buildAvailableDaysSet();
-      fp.redraw(); // onDayCreate を反映
-      log("日付を選んでね");
+      try {
+        log("枠を取得中...");
+        await fetchSlotsYm(ym);
+
+        // ✅ slotsが0でも redraw は実行（キャッシュ済み他月の描画もあるため）
+        fp.redraw();
+        log("日付を選んでね");
+      } catch (e) {
+        log(`ERROR: ${e?.message || e}`);
+      }
     },
 
     onMonthChange: async (selectedDates, dateStr, instance) => {
       const y = instance.currentYear;
       const m = pad2(instance.currentMonth + 1);
       const ym = `${y}${m}`;
+
       try {
         log("枠を取得中...");
-        await fetchSlotsYm(ym);
+        const slots = await fetchSlotsYm(ym);
+
+        // ✅ aborted/古いレスポンスなら描画しない（表示巻き戻り防止）
+        if (!slots) return; // aborted/古いレスポンス
+        if (slots.length === 0) {
+          log("この月は空きがないみたい");
+          fp.redraw();
+          return;
+        }
+
         fp.redraw();
         log("日付を選んでね");
       } catch (e) {
@@ -315,11 +347,15 @@ function initFlatpickr() {
       if (!d) return;
       selectedDate = toYmd(d);
 
-      // その月が未取得なら取得
       const ym = toYmFromYmd(selectedDate);
+
       try {
         log("枠を取得中...");
-        await fetchSlotsYm(ym);
+        const slots = await fetchSlotsYm(ym);
+
+        // ✅ aborted/古いレスポンスなら画面遷移しない（中途半端なslots画面を防ぐ）
+        if (!slots || slots.length === 0) return;
+
         fp.redraw();
         renderSlotsForSelectedDate();
         showView("slots");
