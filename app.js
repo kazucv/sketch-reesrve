@@ -522,7 +522,11 @@ function renderReservationList(items) {
     return;
   }
 
-  const sorted = [...items].reverse();
+  const sorted = [...items].sort((a, b) => {
+    const da = normalizeYmd(a.ymd || a.date || "");
+    const db = normalizeYmd(b.ymd || b.date || "");
+    return da.localeCompare(db);
+  });
 
   sorted.forEach((it) => {
     // 日付（YYYY-MM-DD）をできるだけ確実に作る
