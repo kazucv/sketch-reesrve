@@ -545,11 +545,44 @@ async function reserveSelected() {
 
   const r = await postJson(GAS_URL, payload, 10000);
 
+  // ✅ 失敗
   if (!r.data?.ok) {
-    log(`予約NG: ${JSON.stringify(r.data)}`);
+    const msg = String(r.data?.message || "");
+
+    // ここ：埋まってた系は「自動で最新に更新」してから案内
+    const isAlready =
+      msg === "slot_already_reserved" ||
+      msg === "slot_already_booked" ||
+      msg.includes("already");
+
+    if (isAlready) {
+      try {
+        log("今ちょうど別の予定が入ったみたい。最新の空きを読み込み直すね…");
+
+        const ym = toYmFromYmd(selectedDate);
+        await refreshSlotsYm(ym); // ✅ force=trueで取り直す
+        fp?.redraw?.(); // ✅ カレンダーの点も更新
+
+        // slots画面が開いてるなら再描画
+        if (
+          !document.getElementById("viewSlots")?.classList.contains("hidden")
+        ) {
+          renderSlotsForSelectedDate();
+        }
+
+        log("最新の空きに更新したよ。もう一度時間を選んでね🙂");
+      } catch (e) {
+        log("更新できなかった…通信が不安定みたい。もう一度試してね");
+      }
+      return;
+    }
+
+    // その他のエラー
+    log(`予約できませんでした：${msg || "不明なエラー"}`);
     return;
   }
 
+  // ✅ 成功
   showDone(r.data);
 
   // ✅ 備考だけクリア（連続予約でも事故らない）
