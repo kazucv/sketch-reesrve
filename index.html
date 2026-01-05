@@ -439,6 +439,123 @@
           }
         }
       }
+
+      /* ==========================
+   UI polish (v1) - add-on
+   ========================== */
+
+      /* --- tokens: まずは触りやすい所だけ --- */
+      :root {
+        --blue: #0b5bd3;
+        --focus: rgba(11, 91, 211, 0.22);
+        --border: rgba(0, 0, 0, 0.08);
+        --border-weak: rgba(0, 0, 0, 0.06);
+        --text-weak: rgba(17, 17, 17, 0.72);
+      }
+
+      /* --- typography: 全体の“上品さ”ここで決まる --- */
+      body {
+        line-height: 1.55;
+      }
+      .title {
+        /* 42はカッコいいけどスマホで強いので可変に */
+        font-size: clamp(30px, 7vw, 42px);
+      }
+      .subtitle {
+        line-height: 1.5;
+        color: var(--text-weak);
+      }
+      .card {
+        line-height: 1.5;
+      }
+
+      /* --- tap feedback: iOSっぽい押し感 --- */
+      button {
+        -webkit-tap-highlight-color: transparent;
+      }
+      .back,
+      .slot-btn,
+      .primary,
+      .ghost,
+      .tab,
+      .danger-btn,
+      .ghost-btn {
+        transition: transform 0.06s ease, background 0.12s ease,
+          opacity 0.12s ease;
+      }
+      .back:active,
+      .slot-btn:active,
+      .primary:active,
+      .ghost:active,
+      .tab:active,
+      .danger-btn:active,
+      .ghost-btn:active {
+        transform: translateY(1px);
+      }
+
+      /* --- focus: 入力時の気持ちよさ --- */
+      input,
+      textarea {
+        border: 1px solid transparent;
+      }
+      input:focus,
+      textarea:focus {
+        border-color: var(--focus);
+        box-shadow: 0 0 0 4px rgba(11, 91, 211, 0.1);
+      }
+
+      /* --- buttons: disabled状態を揃える --- */
+      .primary:disabled,
+      .ghost:disabled,
+      .back:disabled,
+      .slot-btn:disabled,
+      .danger-btn:disabled,
+      .ghost-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      /* --- status: 文字が“ただのログ”に見えないように --- */
+      #status {
+        padding-top: 10px;
+        padding-bottom: 6px;
+        letter-spacing: 0.01em;
+      }
+      #status::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        margin-right: 8px;
+        background: rgba(0, 0, 0, 0.18);
+        transform: translateY(-1px);
+      }
+
+      /* --- tabbar: safe area と高さの見た目を少し安定 --- */
+      .tabbar {
+        padding-bottom: var(--safe-b);
+      }
+      .tabbar-inner {
+        padding-bottom: 12px;
+      }
+
+      /* --- flatpickr: 見た目の境界を少しだけ整える --- */
+      .flatpickr-calendar {
+        border: 1px solid var(--border-weak) !important;
+      }
+      .flatpickr-months {
+        border-bottom: 1px solid var(--border-weak);
+      }
+
+      /* --- modal: 影と区切りを少しだけ上品に --- */
+      .modal-card {
+        border: 1px solid var(--border);
+      }
+      .modal-meta {
+        border: 1px solid var(--border-weak);
+      }
     </style>
   </head>
 
