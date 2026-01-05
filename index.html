@@ -556,6 +556,19 @@
       .modal-meta {
         border: 1px solid var(--border-weak);
       }
+
+      /* view切り替えの気配用 */
+      .view {
+        transition: opacity 0.12s ease-out;
+      }
+
+      .view.hidden {
+        opacity: 0;
+      }
+
+      .view:not(.hidden) {
+        opacity: 1;
+      }
     </style>
   </head>
 
@@ -584,7 +597,7 @@
       <main class="content">
         <input id="date" />
 
-        <section id="viewCalendar">
+        <section id="viewCalendar" class="view">
           <div class="title">日付選択</div>
           <div class="subtitle">今日以降の予約可能日を選んでね</div>
           <div class="card">
@@ -592,7 +605,7 @@
           </div>
         </section>
 
-        <section id="viewSlots" class="hidden">
+        <section id="viewSlots" class="view hidden">
           <div class="topbar">
             <button id="backToCalendar" class="back">← 日付選択</button>
           </div>
@@ -611,7 +624,7 @@
           </div>
         </section>
 
-        <section id="viewForm" class="hidden">
+        <section id="viewForm" class="view hidden">
           <div class="topbar">
             <button id="backToSlots" class="back">← 空き時間</button>
           </div>
@@ -636,7 +649,7 @@
           <div class="hint">お名前と電話番号は必須です</div>
         </section>
 
-        <section id="viewConfirm" class="hidden">
+        <section id="viewConfirm" class="view hidden">
           <div class="topbar">
             <button id="confirmBackBtn" class="back">← 戻って修正</button>
           </div>
@@ -652,7 +665,7 @@
           <div class="hint">予約を確定すると、カレンダーに登録されます</div>
         </section>
 
-        <section id="viewDone" class="hidden">
+        <section id="viewDone" class="view hidden">
           <div class="title">完了</div>
           <div class="card" id="doneSummary"></div>
 
@@ -664,7 +677,7 @@
           </div>
         </section>
 
-        <section id="viewList" class="hidden">
+        <section id="viewList" class="view hidden">
           <div class="title">予約一覧</div>
           <div id="listStatus" style="opacity: 0.7; margin: 8px 0 14px"></div>
           <div id="listRoot"></div>
