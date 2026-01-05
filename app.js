@@ -854,7 +854,7 @@ function renderReservationList(items) {
           ? `<div style="opacity:.5; margin-top:6px; font-size:12px;">予約ID: ${rid}</div>`
           : ""
       }
-      <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px;">
+      <div style="margin-top:3px; display:flex; justify-content:flex-end; gap:8px;">
         ${
           isCanceled
             ? `<button type="button" class="ghost-btn" data-action="rebook">もう一度予約する</button>`
