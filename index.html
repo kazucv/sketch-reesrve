@@ -28,7 +28,7 @@
         --radius: 10px;
         --radius-lg: 14px;
         --tap: rgba(11, 91, 211, 0.12);
-        --tabbar-h: 62px;
+        --tabbar-h: 72px;
         --safe-b: env(safe-area-inset-bottom, 0px);
       }
       * {
@@ -103,6 +103,7 @@
         max-width: 720px;
         padding: 10px 16px 18px;
         -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 22px);
         background-color: #efefef;
       }
 
