@@ -423,6 +423,19 @@
         display: none !important;
       }
 
+      /* view切り替えの気配用 */
+      .view {
+        transition: opacity 0.12s ease-out;
+      }
+
+      .view.hidden {
+        opacity: 0;
+      }
+
+      .view:not(.hidden) {
+        opacity: 1;
+      }
+
       /* iOSっぽくしたいなら任意 */
       @media (prefers-reduced-motion: no-preference) {
         .modal-card {
@@ -555,19 +568,6 @@
       }
       .modal-meta {
         border: 1px solid var(--border-weak);
-      }
-
-      /* view切り替えの気配用 */
-      .view {
-        transition: opacity 0.12s ease-out;
-      }
-
-      .view.hidden {
-        opacity: 0;
-      }
-
-      .view:not(.hidden) {
-        opacity: 1;
       }
     </style>
   </head>
