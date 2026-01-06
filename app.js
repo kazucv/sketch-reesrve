@@ -2,8 +2,8 @@ console.log("✅ app.js loaded", new Date().toISOString());
 
 // ====== CONFIG ======
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbx2e8Xd8kAQ--kWErdGY7CBtsJ8gDSD87SEQbtDHrfM5HL0xxGhfpzZ8hQ5Qjj8bRg/exec";
-const LIFF_ID = "2008793696-IEhzXwEH";
+  "https://script.google.com/macros/s/AKfycbyLVVZVccrFWraSY6eZgB8J6jD_uZh5o8krME5Ta55xcFX6sO3odYvYnu0t88YsCns/exec";
+const LIFF_ID = "2008831805-lXkoZs7F";
 
 // ====== DOM ======
 const statusEl = document.getElementById("status");
