@@ -47,6 +47,8 @@ const tabReserve = document.getElementById("tabReserve");
 const tabList = document.getElementById("tabList");
 const tabSettings = document.getElementById("tabSettings");
 
+const viewSettings = document.getElementById("viewSettings");
+
 // ====== state ======
 let profile = null;
 let fp = null;
@@ -189,6 +191,7 @@ function showView(name) {
   viewDone.classList.add("hidden");
   viewList?.classList.add("hidden");
   viewConfirm?.classList.add("hidden");
+  viewSettings?.classList.add("hidden");
 
   if (name === "calendar") viewCalendar.classList.remove("hidden");
   if (name === "slots") viewSlots.classList.remove("hidden");
@@ -196,6 +199,7 @@ function showView(name) {
   if (name === "confirm") viewConfirm?.classList.remove("hidden");
   if (name === "done") viewDone.classList.remove("hidden");
   if (name === "list") viewList?.classList.remove("hidden");
+  if (name === "settings") viewSettings?.classList.remove("hidden");
 }
 
 function showDone(reserveResult) {
@@ -1068,9 +1072,8 @@ async function run() {
 
     tabSettings?.addEventListener("click", () => {
       setActiveTab("settings");
-      // settings画面を作ってなければ一旦ここは予約へ戻すでもOK
-      // showView("settings");
-      log("設定はこれから作ろう");
+      showView("settings");
+      log("ご案内を表示したよ");
     });
 
     // Start
