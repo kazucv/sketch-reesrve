@@ -633,7 +633,6 @@ async function reserveSelected() {
 
   const payload = {
     action: "createReservation",
-    userId: profile.userId,
     slotId: selectedSlot.slotId,
     name,
     tel,
@@ -684,6 +683,7 @@ async function reserveSelected() {
 
   // ✅ 備考だけクリア（連続予約でも事故らない）
   resetNoteOnly();
+  selectedSlot = null;
 
   const ym = toYmFromYmd(selectedDate);
   await refreshSlotsYm(ym);
@@ -1074,37 +1074,64 @@ async function run() {
     });
 
     // Start
-    showView("calendar");
-    initFlatpickr();
   } catch (e) {
     log(`ERROR: ${e?.name || "Error"} / ${e?.message || e}`);
     console.error(e);
+    return; // ←これ追加！
+  }
+
+  // Start
+  const params = new URLSearchParams(location.search);
+  const tab = params.get("tab") || "reserve";
+
+  if (tab === "list") {
+    setActiveTab("list");
+    await openListView();
+  } else {
+    setActiveTab("reserve");
+    showView("calendar");
+    initFlatpickr();
   }
 }
 
 run();
 
 // ====== swipe back (view internal) ======
+function ensureCalendarView() {
+  showView("calendar");
+  if (!fp) initFlatpickr();
+  requestAnimationFrame(() => fp?.redraw?.());
+  log("日付を選んでね");
+}
+
+function ensureSlotsView() {
+  showView("slots");
+  renderSlotsForSelectedDate();
+  log("時間を選んでね");
+}
+
+function ensureFormView() {
+  showView("form");
+  log("修正してね");
+}
+
 function setupSwipeBack() {
   let sx = 0,
     sy = 0,
     started = false;
 
-  const EDGE = 24; // 左端から何px以内で開始したら有効か
-  const THRESH = 70; // 戻る判定の横移動量
-  const VERTICAL_LIMIT = 60; // 縦ブレ許容
+  const EDGE = 24;
+  const THRESH = 70;
+  const VERTICAL_LIMIT = 60;
 
-  const isInteractive = (el) => {
-    return el?.closest?.(
+  const isInteractive = (el) =>
+    el?.closest?.(
       "input, textarea, select, button, a, .slot-btn, .danger-btn, .ghost-btn"
     );
-  };
 
   const onPointerDown = (e) => {
-    if (e.pointerType === "mouse") return; // PCは無視（必要なら有効化OK）
+    if (e.pointerType === "mouse") return;
     if (isInteractive(e.target)) return;
-
-    // 左端からの開始だけ有効
     if (e.clientX > EDGE) return;
 
     started = true;
@@ -1118,41 +1145,42 @@ function setupSwipeBack() {
     const dx = e.clientX - sx;
     const dy = Math.abs(e.clientY - sy);
 
-    // 縦に動きすぎたらキャンセル（スクロール優先）
     if (dy > VERTICAL_LIMIT) {
       started = false;
       return;
     }
 
-    // 右スワイプ判定
     if (dx > THRESH) {
       started = false;
 
-      // 今の表示状態に応じて戻る
-      if (!viewSlots.classList.contains("hidden")) {
-        showView("calendar");
-        log("日付を選んでね");
+      // confirm → form
+      if (viewConfirm && !viewConfirm.classList.contains("hidden")) {
+        ensureFormView();
         return;
       }
-      if (!viewForm.classList.contains("hidden")) {
-        showView("slots");
-        log("時間を選んでね");
+
+      // form → slots
+      if (viewForm && !viewForm.classList.contains("hidden")) {
+        ensureSlotsView();
         return;
       }
-      if (!viewConfirm.classList.contains("hidden")) {
-        showView("form");
-        log("修正してね");
+
+      // slots → calendar
+      if (viewSlots && !viewSlots.classList.contains("hidden")) {
+        ensureCalendarView();
         return;
       }
-      if (!viewDone.classList.contains("hidden")) {
-        showView("calendar");
-        log("日付を選んでね");
+
+      // done → calendar
+      if (viewDone && !viewDone.classList.contains("hidden")) {
+        ensureCalendarView();
         return;
       }
-      if (!viewList.classList.contains("hidden")) {
+
+      // list → calendar
+      if (viewList && !viewList.classList.contains("hidden")) {
         setActiveTab("reserve");
-        showView("calendar");
-        log("日付を選んでね");
+        ensureCalendarView();
         return;
       }
     }
@@ -1162,7 +1190,6 @@ function setupSwipeBack() {
     started = false;
   };
 
-  // pointer events（iOSもだいたいOK）
   document.addEventListener("pointerdown", onPointerDown, { passive: true });
   document.addEventListener("pointermove", onPointerMove, { passive: true });
   document.addEventListener("pointerup", onPointerUp, { passive: true });
