@@ -1138,7 +1138,6 @@ async function run() {
       // ✅ 名前とTELは残す / 備考だけ消す
       resetNoteOnly();
       ensureCalendarView();
-      clearStatus();
     });
 
     doneToSlots?.addEventListener("click", () => {
@@ -1146,28 +1145,24 @@ async function run() {
       showView("slots");
       renderSlotsForSelectedDate();
       log(MSG.slots);
-      clearStatus();
     });
 
     tabReserve?.addEventListener("click", () => {
       setActiveTab("reserve");
       ensureCalendarView(); // ここで画面切替
       log(MSG.calendar); // ←必ず上書き
-      clearStatus();
     });
 
     tabList?.addEventListener("click", async () => {
       setActiveTab("list");
       log(MSG.listLoading);
       await openListView(); // さっき作ったやつ
-      clearStatus();
     });
 
     tabSettings?.addEventListener("click", () => {
       setActiveTab("settings");
       showView("settings");
       log(MSG.settings);
-      clearStatus();
     });
 
     // Start
