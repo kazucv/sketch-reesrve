@@ -1103,8 +1103,7 @@ async function run() {
 
     tabReserve?.addEventListener("click", () => {
       setActiveTab("reserve");
-      showView("calendar");
-      log("日付を選んでね");
+      ensureCalendarView();
     });
 
     tabList?.addEventListener("click", async () => {
