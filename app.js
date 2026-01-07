@@ -1016,6 +1016,7 @@ function renderReservationList(items) {
 async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
+  log(MSG.listLoading);
 
   try {
     const items = await fetchMyReservations();
