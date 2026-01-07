@@ -901,7 +901,7 @@ function renderReservationList(items) {
       if (!targetRid) return;
 
       if (action === "cancel") {
-        const ymdLabel2 = ymdLabel; // そのまま使う
+        const ymdLabel2 = ymdLabel; // 表示用
         const time2 = time;
         const targetRid2 = targetRid;
 
@@ -918,12 +918,32 @@ function renderReservationList(items) {
                 reservationId: targetRid2,
               });
 
-              if (!data?.ok)
+              if (!data?.ok) {
                 throw new Error(data?.message || "キャンセルに失敗しました");
+              }
 
+              // ✅ ① 一覧を更新
               const items2 = await fetchMyReservations();
               renderReservationList(items2);
               setListStatus(items2.length ? `${items2.length}件` : "");
+
+              // ✅ ② この予約日の ym を特定して slots を強制更新
+              const ymdRaw =
+                it.ymd ||
+                (it.date
+                  ? String(it.date).includes("T")
+                    ? ymdFromIso(it.date)
+                    : it.date
+                  : "") ||
+                (it.start ? ymdFromIso(it.start) : "") ||
+                (it.slotId ? slotIdToYmd(it.slotId) : "");
+
+              const ymd = normalizeYmd(ymdRaw);
+              const ym = toYmFromYmd(ymd);
+
+              await refreshSlotsYm(ym); // ★ GAS + フロント 両方リフレッシュ
+              fp?.redraw?.(); // ★ カレンダーの点も即更新
+
               log("キャンセルしたよ");
             } catch (err) {
               setListStatus("キャンセルできませんでした");
