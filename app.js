@@ -206,8 +206,10 @@ function showDone(reserveResult) {
   const rid = reserveResult?.reservationId || "(不明)";
 
   const slot = selectedSlot;
-  const startHm = slot ? hmFromIso(slot.start) || slotIdToHm(slot.slotId) : "";
-  const endHm = slot ? hmFromIso(slot.end) || "" : "";
+  const startHm = slot
+    ? hmFromIso(slot.start) || slotIdToStartHm(slot.slotId)
+    : "";
+  const endHm = slot ? hmFromIso(slot.end) || slotIdToEndHm(slot.slotId) : "";
 
   if (!doneSummary) {
     log("doneSummary が見つからない…（HTMLのid確認してね）");
@@ -272,6 +274,7 @@ function slotIdToYmd(slotId) {
   return `${y}-${m}-${d}`;
 }
 
+// NOTE: slotIdToHm は "09:00〜11:00" 全体を返すので、UI表示では使わないこと
 function slotIdToHm(slotId) {
   // "20260105_10:00" -> "10:00"
   const s = String(slotId || "");
@@ -287,9 +290,31 @@ function hmFromIso(iso) {
 }
 
 function isAM(slot) {
-  const hm = hmFromIso(slot.start) || slotIdToHm(slot.slotId);
-  const h = Number(hm.slice(0, 2));
+  const hm = hmFromIso(slot.start) || slotIdToStartHm(slot.slotId);
+  const h = Number(String(hm || "").slice(0, 2));
   return h < 12;
+}
+
+function slotIdToStartHm(slotId) {
+  const s = String(slotId || "");
+  const idx = s.indexOf("_");
+  if (idx === -1) return "";
+
+  const tail = s.slice(idx + 1).replace(/\s/g, ""); // "09:00〜11:00"
+  const m = tail.match(/^(\d{2}:\d{2})/);
+  return m ? m[1] : "";
+}
+
+function slotIdToEndHm(slotId) {
+  const s = String(slotId || "");
+  const idx = s.indexOf("_");
+  if (idx === -1) return "";
+
+  const tail = s.slice(idx + 1).replace(/\s/g, "");
+  const parts = tail.split("〜");
+  if (parts.length < 2) return "";
+  const m = parts[1].match(/^(\d{2}:\d{2})/);
+  return m ? m[1] : "";
 }
 
 function clearSlotsUI() {
@@ -578,11 +603,9 @@ function renderSlotsForSelectedDate() {
     btn.type = "button";
     btn.className = "slot-btn";
 
-    const startHm = hmFromIso(slot.start) || slotIdToHm(slot.slotId);
-    const endHm = hmFromIso(slot.end);
-    btn.textContent = endHm
-      ? `${startHm} 〜 ${endHm}`
-      : `${slot.start} 〜 ${slot.end}`;
+    const startHm = hmFromIso(slot.start) || slotIdToStartHm(slot.slotId);
+    const endHm = hmFromIso(slot.end) || slotIdToEndHm(slot.slotId);
+    btn.textContent = endHm ? `${startHm} 〜 ${endHm}` : startHm;
 
     btn.addEventListener("click", () => {
       selectedSlot = slot;
@@ -604,8 +627,8 @@ function renderFormSummary() {
   const slot = selectedSlot;
   if (!slot) return;
 
-  const startHm = hmFromIso(slot.start) || slotIdToHm(slot.slotId);
-  const endHm = hmFromIso(slot.end) || "";
+  const startHm = hmFromIso(slot.start) || slotIdToStartHm(slot.slotId);
+  const endHm = hmFromIso(slot.end) || slotIdToEndHm(slot.slotId);
   const d = new Date(ymd);
   const y = d.getFullYear();
   const m = d.getMonth() + 1;
@@ -691,7 +714,7 @@ async function reserveSelected() {
 
   const ym = toYmFromYmd(selectedDate);
   await refreshSlotsYm(ym);
-  fp.redraw();
+  fp?.redraw?.();
 }
 
 function renderConfirmSummary() {
@@ -706,8 +729,8 @@ function renderConfirmSummary() {
   if (!selectedSlot) return;
 
   const slot = selectedSlot;
-  const startHm = hmFromIso(slot.start) || slotIdToHm(slot.slotId);
-  const endHm = hmFromIso(slot.end) || "";
+  const startHm = hmFromIso(slot.start) || slotIdToStartHm(slot.slotId);
+  const endHm = hmFromIso(slot.end) || slotIdToEndHm(slot.slotId);
   const ymdLabel = fmtYmdJaWithDow(selectedDate);
 
   confirmSummary.innerHTML = `
@@ -797,9 +820,8 @@ function fmtTimeRange(item) {
   }
 
   // 保険：start/end or slotId
-  const startHm = hmFromIso(item?.start) || slotIdToHm(item?.slotId);
-  const endHm = hmFromIso(item?.end) || "";
-
+  const startHm = hmFromIso(item?.start) || slotIdToStartHm(item?.slotId);
+  const endHm = hmFromIso(item?.end) || slotIdToEndHm(item?.slotId);
   return endHm ? `${startHm}〜${endHm}` : startHm || "";
 }
 
