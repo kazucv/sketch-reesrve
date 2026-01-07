@@ -1154,8 +1154,8 @@ async function run() {
 
     tabList?.addEventListener("click", async () => {
       setActiveTab("list");
-      log(MSG.listLoading);
       await openListView(); // さっき作ったやつ
+      log(MSG.listLoading);
     });
 
     tabSettings?.addEventListener("click", () => {
