@@ -1016,7 +1016,6 @@ function renderReservationList(items) {
 async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
-  clearStatus();
 
   try {
     const items = await fetchMyReservations();
@@ -1133,41 +1132,41 @@ async function run() {
     });
 
     doneToCalendar?.addEventListener("click", () => {
-      clearStatus();
       selectedSlot = null;
 
       // ✅ 名前とTELは残す / 備考だけ消す
       resetNoteOnly();
       ensureCalendarView();
+      clearStatus();
     });
 
     doneToSlots?.addEventListener("click", () => {
-      clearStatus();
       // “同じ日の空き時間を見る”
       showView("slots");
       renderSlotsForSelectedDate();
       log(MSG.slots);
+      clearStatus();
     });
 
     tabReserve?.addEventListener("click", () => {
-      clearStatus();
       setActiveTab("reserve");
       ensureCalendarView(); // ここで画面切替
       log(MSG.calendar); // ←必ず上書き
+      clearStatus();
     });
 
     tabList?.addEventListener("click", async () => {
-      clearStatus();
       setActiveTab("list");
       log(MSG.listLoading);
       await openListView(); // さっき作ったやつ
+      clearStatus();
     });
 
     tabSettings?.addEventListener("click", () => {
-      clearStatus();
       setActiveTab("settings");
       showView("settings");
       log(MSG.settings);
+      clearStatus();
     });
 
     // Start
