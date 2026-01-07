@@ -65,8 +65,22 @@ let selectedSlot = null; // slot object
 // ====== utils ======
 const log = (msg) => {
   console.log(msg);
-  if (statusEl) statusEl.textContent = msg;
+  // UIには出さない
 };
+
+function logInfo(msg) {
+  console.log(msg);
+  // UIには出さない
+}
+
+function logError(msg) {
+  console.error(msg);
+  if (statusEl) statusEl.textContent = msg; // ←ここだけ出す
+}
+
+function clearStatus() {
+  if (statusEl) statusEl.textContent = "";
+}
 
 // ====== modal (cancel confirm) ======
 const modalOverlay = document.getElementById("modalOverlay");
@@ -991,18 +1005,42 @@ function renderReservationList(items) {
 async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
+  clearStatus();
 
   try {
     const items = await fetchMyReservations();
     renderReservationList(items);
     setListStatus(items.length ? `${items.length}件` : "");
-    log("予約一覧を表示したよ");
+    logInfo("予約一覧を表示したよ");
   } catch (e) {
     setListStatus("取得できませんでした");
+
+    const msg = e?.message || String(e || "予約一覧の取得に失敗しました");
+    logError(`予約一覧の取得に失敗しました（再読み込みしてね）`);
+
     if (listRoot) {
-      listRoot.innerHTML = `<div style="opacity:.7;">${e?.message || e}</div>`;
+      listRoot.innerHTML = `
+        <div style="opacity:.8; line-height:1.6;">
+          予約一覧を取得できませんでした。<br/>
+          <span style="opacity:.7; font-size:12px;">${escapeHtml(msg)}</span>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:8px;">
+          <button type="button" class="ghost-btn" id="btnRetryList">再読み込み</button>
+          <button type="button" class="ghost-btn" id="btnGoReserve">予約へ戻る</button>
+        </div>
+      `;
+
+      document
+        .getElementById("btnRetryList")
+        ?.addEventListener("click", async () => {
+          await openListView();
+        });
+
+      document.getElementById("btnGoReserve")?.addEventListener("click", () => {
+        setActiveTab("reserve");
+        ensureCalendarView();
+      });
     }
-    log(`ERROR: ${e?.message || e}`);
   }
 }
 
@@ -1084,6 +1122,7 @@ async function run() {
     });
 
     doneToCalendar?.addEventListener("click", () => {
+      clearStatus();
       selectedSlot = null;
 
       // ✅ 名前とTELは残す / 備考だけ消す
@@ -1092,6 +1131,7 @@ async function run() {
     });
 
     doneToSlots?.addEventListener("click", () => {
+      clearStatus();
       // “同じ日の空き時間を見る”
       showView("slots");
       renderSlotsForSelectedDate();
@@ -1099,16 +1139,19 @@ async function run() {
     });
 
     tabReserve?.addEventListener("click", () => {
+      clearStatus();
       setActiveTab("reserve");
       ensureCalendarView();
     });
 
     tabList?.addEventListener("click", async () => {
+      clearStatus();
       setActiveTab("list");
       await openListView(); // さっき作ったやつ
     });
 
     tabSettings?.addEventListener("click", () => {
+      clearStatus();
       setActiveTab("settings");
       showView("settings");
       log("ご案内を表示したよ");
@@ -1141,18 +1184,18 @@ function ensureCalendarView() {
   showView("calendar");
   if (!fp) initFlatpickr();
   requestAnimationFrame(() => fp?.redraw?.());
-  log("日付を選んでね");
+  //log("日付を選んでね");
 }
 
 function ensureSlotsView() {
   showView("slots");
   renderSlotsForSelectedDate();
-  log("時間を選んでね");
+  //log("時間を選んでね");
 }
 
 function ensureFormView() {
   showView("form");
-  log("修正してね");
+  //log("修正してね");
 }
 
 function setupSwipeBack() {
