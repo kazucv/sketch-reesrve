@@ -70,9 +70,8 @@
         margin: 0 auto;
         padding: 14px 16px;
         display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 10px;
+        flex-direction: column;
+        gap: 5px;
       }
       .header-inner .logo {
         font-weight: bold;
@@ -80,20 +79,20 @@
       }
       .brand {
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
         line-height: 1.1;
         gap: 3px;
       }
       .brand .sub {
         font-size: 11px;
         color: var(--muted);
-        margin-top: 4px;
+        /* margin-top: 4px; */
       }
 
       .brand .cap {
         font-size: 11px;
         color: var(--muted);
-        margin-top: 4px;
+        /* margin-top: 4px; */
       }
 
       #status {
@@ -611,7 +610,7 @@
           <div class="logo" id="headerGreeting">こんにちは〇〇さん</div>
           <div class="brand">
             <div class="sub">KID ACADEMY＋ 高岡駅南校</div>
-            <div class="cap">予約ツール</div>
+            <div class="cap">ご利用者さま専用予約ツール</div>
           </div>
         </div>
       </header>
