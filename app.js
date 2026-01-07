@@ -1035,8 +1035,7 @@ async function run() {
 
     // UI events
     backToCalendar?.addEventListener("click", () => {
-      showView("calendar");
-      log("日付を選んでね");
+      ensureCalendarView();
     });
 
     backToSlots?.addEventListener("click", () => {
@@ -1089,9 +1088,7 @@ async function run() {
 
       // ✅ 名前とTELは残す / 備考だけ消す
       resetNoteOnly();
-
-      showView("calendar");
-      log("日付を選んでね");
+      ensureCalendarView();
     });
 
     doneToSlots?.addEventListener("click", () => {
@@ -1133,8 +1130,7 @@ async function run() {
     await openListView();
   } else {
     setActiveTab("reserve");
-    showView("calendar");
-    initFlatpickr();
+    ensureCalendarView();
   }
 }
 
