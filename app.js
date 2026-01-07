@@ -1017,11 +1017,14 @@ async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
 
+  log(MSG.listLoading);
+
   try {
     const items = await fetchMyReservations();
     renderReservationList(items);
     setListStatus(items.length ? `${items.length}件` : "");
-    logInfo("予約一覧を表示したよ");
+    //logInfo("予約一覧を表示したよ");
+    log(items.length ? `予約一覧：${items.length}件` : "予約はまだありません");
   } catch (e) {
     setListStatus("取得できませんでした");
 
@@ -1148,14 +1151,14 @@ async function run() {
 
     tabReserve?.addEventListener("click", () => {
       setActiveTab("reserve");
-      ensureCalendarView(); // ここで画面切替
-      log(MSG.calendar); // ←必ず上書き
+      ensureCalendarView();
+      log(MSG.calendar);
     });
 
     tabList?.addEventListener("click", async () => {
       setActiveTab("list");
-      log(MSG.listLoading);
-      await openListView(); // さっき作ったやつ
+      //log(MSG.listLoading);
+      await openListView();
     });
 
     tabSettings?.addEventListener("click", () => {
@@ -1191,7 +1194,7 @@ function ensureCalendarView() {
   showView("calendar");
   if (!fp) initFlatpickr();
   requestAnimationFrame(() => fp?.redraw?.());
-  log(MSG.calendar);
+  //log(MSG.calendar);
 }
 
 function ensureSlotsView() {
