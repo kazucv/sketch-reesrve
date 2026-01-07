@@ -49,6 +49,17 @@ const tabSettings = document.getElementById("tabSettings");
 
 const viewSettings = document.getElementById("viewSettings");
 
+const MSG = {
+  calendar: "日付を選んでね",
+  loadingSlots: "枠を取得中...",
+  slots: "時間を選んでね",
+  form: "お名前と電話番号を入れてね",
+  confirm: "内容を確認してね",
+  listLoading: "予約一覧を取得中...",
+  settings: "ご案内を表示したよ",
+  networkWeak: "通信が不安定みたい。もう一度試してね",
+};
+
 // ====== state ======
 let profile = null;
 let fp = null;
@@ -65,7 +76,7 @@ let selectedSlot = null; // slot object
 // ====== utils ======
 const log = (msg) => {
   console.log(msg);
-  // UIには出さない
+  if (statusEl) statusEl.textContent = msg; // ←UIにも出す
 };
 
 function logInfo(msg) {
@@ -991,7 +1002,7 @@ function renderReservationList(items) {
           const ym = toYmFromYmd(ymd);
           await refreshSlotsYm(ym); // ★最新の空きを取りに行く
           fp?.setDate(ymd, true); // ★その日を選択（onChange発火→slots表示へ）
-          log("時間を選んでね");
+          log(MSG.slots);
         } catch (e) {
           log(`ERROR: ${e?.message || e}`);
         }
@@ -1078,7 +1089,7 @@ async function run() {
 
     backToSlots?.addEventListener("click", () => {
       showView("slots");
-      log("時間を選んでね");
+      log(MSG.slots);
     });
 
     confirmBackBtn?.addEventListener("click", () => {
@@ -1118,7 +1129,7 @@ async function run() {
 
       renderConfirmSummary();
       showView("confirm");
-      log("内容を確認してね");
+      log(MSG.confirm);
     });
 
     doneToCalendar?.addEventListener("click", () => {
@@ -1135,18 +1146,20 @@ async function run() {
       // “同じ日の空き時間を見る”
       showView("slots");
       renderSlotsForSelectedDate();
-      log("時間を選んでね");
+      log(MSG.slots);
     });
 
     tabReserve?.addEventListener("click", () => {
       clearStatus();
       setActiveTab("reserve");
-      ensureCalendarView();
+      ensureCalendarView(); // ここで画面切替
+      log(MSG.calendar); // ←必ず上書き
     });
 
     tabList?.addEventListener("click", async () => {
       clearStatus();
       setActiveTab("list");
+      log(MSG.listLoading);
       await openListView(); // さっき作ったやつ
     });
 
@@ -1154,7 +1167,7 @@ async function run() {
       clearStatus();
       setActiveTab("settings");
       showView("settings");
-      log("ご案内を表示したよ");
+      log(MSG.settings);
     });
 
     // Start
@@ -1184,18 +1197,18 @@ function ensureCalendarView() {
   showView("calendar");
   if (!fp) initFlatpickr();
   requestAnimationFrame(() => fp?.redraw?.());
-  //log("日付を選んでね");
+  log(MSG.calendar);
 }
 
 function ensureSlotsView() {
   showView("slots");
   renderSlotsForSelectedDate();
-  //log("時間を選んでね");
+  log(MSG.slots);
 }
 
 function ensureFormView() {
   showView("form");
-  //log("修正してね");
+  log(MSG.form);
 }
 
 function setupSwipeBack() {
