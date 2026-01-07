@@ -60,6 +60,8 @@ const MSG = {
   networkWeak: "通信が不安定みたい。もう一度試してね",
 };
 
+const headerGreeting = document.getElementById("headerGreeting");
+
 // ====== state ======
 let profile = null;
 let fp = null;
@@ -1082,7 +1084,10 @@ async function run() {
 
     log("3) getting profile...");
     profile = await liff.getProfile();
-    log(`こんにちは、${profile.displayName} さん 😊`);
+
+    if (headerGreeting) {
+      headerGreeting.textContent = `こんにちは ${profile.displayName} さん`;
+    }
 
     // UI events
     backToCalendar?.addEventListener("click", () => {
