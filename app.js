@@ -1131,14 +1131,18 @@ function getActiveReservations(items) {
 async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
-
   log(MSG.listLoading);
 
   try {
     const items = await fetchMyReservations();
 
+    // ✅ これがないと一覧が表示されない
+    renderReservationList(items);
+
+    // ✅ 件数は「現在の予約だけ」
     const activeItems = getActiveReservations(items);
     setListStatus(activeItems.length ? `${activeItems.length}件` : "");
+
     log(
       activeItems.length
         ? `現在の予約：${activeItems.length}件`
