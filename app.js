@@ -1137,7 +1137,7 @@ async function openListView() {
     const past = getPastReservations(items);
 
     // ✅ ここでヘッダーを件数表示に置き換える
-    log(`現在：${active.length}件 / 過去：${past.length}件`);
+    log(`現在の予約：${active.length}件 / 過去の予約：${past.length}件`);
   } catch (e) {
     const msg = e?.message || String(e || "予約一覧の取得に失敗しました");
     logError("予約一覧を取得できませんでした（再読み込みしてね）");
