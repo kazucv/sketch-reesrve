@@ -95,6 +95,10 @@ function clearStatus() {
   if (statusEl) statusEl.textContent = "";
 }
 
+function isViewVisible(el) {
+  return el && !el.classList.contains("hidden");
+}
+
 // ====== modal (cancel confirm) ======
 const modalOverlay = document.getElementById("modalOverlay");
 const cancelModal = document.getElementById("cancelModal");
@@ -540,7 +544,7 @@ function initFlatpickr() {
         }
 
         fp.redraw();
-        log("日付を選んでね");
+        if (isViewVisible(viewCalendar)) log("日付を選んでね");
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
       }
@@ -564,7 +568,7 @@ function initFlatpickr() {
         }
 
         fp.redraw();
-        log("日付を選んでね");
+        if (isViewVisible(viewCalendar)) log("日付を選んでね");
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
       }
@@ -612,10 +616,34 @@ function initFlatpickr() {
 }
 
 // ====== slots view ======
+function isSlotPastStart(slot) {
+  const ymd = slotIdToYmd(slot.slotId);
+  const startHm = hmFromIso(slot.start) || slotIdToStartHm(slot.slotId);
+  if (!ymd || !startHm) return false;
+
+  const start = new Date(`${ymd}T${startHm}:00+09:00`);
+  return start.getTime() <= Date.now();
+}
+
+function todayYmdJst() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()); // "YYYY-MM-DD"
+}
+
 function getSlotsForDate(ymd) {
   const ym = toYmFromYmd(ymd);
   const slots = slotsCache.get(ym) || [];
-  return slots.filter((s) => slotIdToYmd(s.slotId) === ymd);
+  const list = slots.filter((s) => slotIdToYmd(s.slotId) === ymd);
+
+  // ✅ 今日だけ：開始済みは表示しない
+  if (ymd === todayYmdJst()) {
+    return list.filter((s) => !isSlotPastStart(s));
+  }
+  return list;
 }
 
 function renderSlotsForSelectedDate() {
@@ -792,10 +820,6 @@ function escapeHtml(s) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
-}
-
-function setListStatus(msg) {
-  if (listStatus) listStatus.textContent = msg || "";
 }
 
 function fmtYmdJa(ymd) {
