@@ -899,6 +899,18 @@ function pickReservationYmd(it) {
   );
 }
 
+function pickReservationId(it) {
+  return (
+    it.reservationId ||
+    it.reservation_id ||
+    it.reservationID ||
+    it.rid ||
+    it.id ||
+    it.rowId ||
+    ""
+  );
+}
+
 function renderReservationList(items) {
   if (!listRoot) return;
   listRoot.innerHTML = "";
@@ -933,7 +945,7 @@ function renderReservationList(items) {
 
     const ymdLabel = fmtYmdJaWithDow(ymdNorm);
 
-    const rid = it.reservationId || it.id || "";
+    const rid = pickReservationId(it);
     const status = it.status || "予約済み";
     const s = String(status || "");
 
@@ -991,7 +1003,7 @@ function renderReservationList(items) {
       }
 
       const action = btn.dataset.action;
-      const targetRid = it.reservationId || it.id;
+      const targetRid = pickReservationId(it);
       if (!targetRid) return;
 
       if (action === "cancel") {
