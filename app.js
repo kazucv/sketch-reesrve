@@ -572,7 +572,7 @@ function initFlatpickr() {
         const slots = await fetchSlotsYm(ym);
 
         // ✅ aborted/古いレスポンスなら画面遷移しない（中途半端なslots画面を防ぐ）
-        if (!slots || slots.length === 0) return;
+        if (!slots) return;
 
         fp.redraw();
         renderSlotsForSelectedDate();
@@ -983,7 +983,6 @@ function renderReservationList(items) {
       }
 
       if (action === "rebook") {
-        // 対象日のYMDを作る（一覧で表示してるのと同じ元データから）
         const ymdRaw =
           it.ymd ||
           (it.date
@@ -997,14 +996,15 @@ function renderReservationList(items) {
         const ymd = normalizeYmd(ymdRaw);
 
         setActiveTab("reserve");
-        showView("calendar");
+        ensureCalendarView(); // ✅ fp生成もここで担保
         log("空きを確認してるよ...");
 
         try {
           const ym = toYmFromYmd(ymd);
           await refreshSlotsYm(ym); // ★最新の空きを取りに行く
-          fp?.setDate(ymd, true); // ★その日を選択（onChange発火→slots表示へ）
-          log(MSG.slots);
+
+          fp?.setDate(ymd, true); // ★onChange発火 → slots画面へ遷移するのは onChange に任せる
+          // ❌ log(MSG.slots); ← これは消す（見えてないのに「時間を選んでね」になる事故源）
         } catch (e) {
           log(`ERROR: ${e?.message || e}`);
         }
