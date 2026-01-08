@@ -888,9 +888,11 @@ function renderReservationList(items) {
   sorted.forEach((it) => {
     const ymdRaw = pickYmd(it);
     const ymdNorm = normalizeYmd(ymdRaw || "");
-    const isPast = isPastByYmdAndTime(ymdNorm, time);
-    const ymdLabel = fmtYmdJaWithDow(normalizeYmd(ymdRaw || ""));
-    const time = fmtTimeRange(it);
+    const time = fmtTimeRange(it); // ✅ 先にtimeを作る！
+
+    const isPast = isPastByYmdAndTime(ymdNorm, time); // ✅ timeの後に判定する
+
+    const ymdLabel = fmtYmdJaWithDow(ymdNorm);
 
     const rid = it.reservationId || it.id || "";
     const status = it.status || "予約済み";
