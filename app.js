@@ -1127,6 +1127,31 @@ function getActiveReservations(items) {
   });
 }
 
+function getPastReservations(items) {
+  return items.filter((it) => {
+    const ymdRaw =
+      it.ymd ||
+      (it.date
+        ? String(it.date).includes("T")
+          ? ymdFromIso(it.date)
+          : it.date
+        : "") ||
+      (it.start ? ymdFromIso(it.start) : "") ||
+      (it.slotId ? slotIdToYmd(it.slotId) : "");
+
+    const ymd = normalizeYmd(ymdRaw || "");
+    const time = fmtTimeRange(it);
+    const isPast = isPastByYmdAndTime(ymd, time);
+
+    const s = String(it.status || "");
+    const isCanceled =
+      s.includes("キャンセル") || s.includes("取消") || s.includes("cancel");
+    const isDone = s.includes("完了");
+
+    return isPast || isCanceled || isDone;
+  });
+}
+
 async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
@@ -1137,13 +1162,11 @@ async function openListView() {
     const items = await fetchMyReservations();
     renderReservationList(items);
 
-    const active = getActiveReservations(items); // ✅「現在の予約」だけ抽出
-    setListStatus(active.length ? `現在の予約：${active.length}件` : "");
-    log(
-      active.length
-        ? `現在の予約：${active.length}件`
-        : "現在の予約はありません"
-    );
+    const active = getActiveReservations(items); // ✅ 現在
+    const past = getPastReservations(items); // ✅ 過去
+
+    setListStatus(`現在：${active.length}件 / 過去：${past.length}件`);
+    log(`予約一覧：現在 ${active.length}件 / 過去 ${past.length}件`);
   } catch (e) {
     setListStatus("取得できませんでした");
 
