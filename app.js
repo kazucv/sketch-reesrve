@@ -99,6 +99,24 @@ function isViewVisible(el) {
   return el && !el.classList.contains("hidden");
 }
 
+function fmtMdWithDow(ymd) {
+  // "2026-01-05" -> "1月5日(月)"
+  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return ymd || "";
+
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  const dow = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    weekday: "short",
+  }).format(dt);
+
+  return `${mo}月${d}日(${dow})`;
+}
+
 // ====== modal (cancel confirm) ======
 const modalOverlay = document.getElementById("modalOverlay");
 const cancelModal = document.getElementById("cancelModal");
@@ -591,7 +609,7 @@ function initFlatpickr() {
         fp.redraw();
         renderSlotsForSelectedDate();
         showView("slots");
-        log("時間を選んでね");
+        //log("時間を選んでね");
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
       }
@@ -650,8 +668,12 @@ function renderSlotsForSelectedDate() {
   clearSlotsUI();
 
   const slots = getSlotsForDate(selectedDate);
-  if (slotCount)
-    slotCount.textContent = `枠OK: ${slots.length}件（押して予約してね）`;
+
+  // ✅ status に「枠OK + 案内」
+  log(`枠OK: ${slots.length}件（時間を選んでね）`);
+
+  // ✅ slotCount に「○月○日（○）」
+  if (slotCount) slotCount.textContent = fmtMdWithDow(selectedDate);
 
   const am = slots.filter((s) => isAM(s));
   const pm = slots.filter((s) => !isAM(s));
