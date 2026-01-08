@@ -887,6 +887,8 @@ function renderReservationList(items) {
 
   sorted.forEach((it) => {
     const ymdRaw = pickYmd(it);
+    const ymdNorm = normalizeYmd(ymdRaw || "");
+    const isPast = isPastYmd(ymdNorm);
     const ymdLabel = fmtYmdJaWithDow(normalizeYmd(ymdRaw || ""));
     const time = fmtTimeRange(it);
 
@@ -909,22 +911,33 @@ function renderReservationList(items) {
     card.className = "card";
 
     // ✅ 最初からボタンを描画しておく
+    let actionButtons = "";
+
+    if (isCanceled && !isPast) {
+      actionButtons = `
+    <button type="button" class="ghost-btn" data-action="rebook">
+      もう一度予約する
+    </button>
+  `;
+    } else if (!isCanceled && !isPast) {
+      actionButtons = `
+    <button type="button" class="danger-btn" data-action="cancel">
+      キャンセル
+    </button>
+  `;
+    }
     card.innerHTML = `
-      <div style="font-weight:700;">${ymdLabel} / ${time}</div>
-      <div style="margin-top:6px; font-size:13px;">${statusLabel}</div>
-      ${
-        rid
-          ? `<div style="opacity:.5; margin-top:6px; font-size:12px;">予約ID: ${rid}</div>`
-          : ""
-      }
-      <div style="margin-top:3px; display:flex; justify-content:flex-end; gap:8px;">
-        ${
-          isCanceled
-            ? `<button type="button" class="ghost-btn" data-action="rebook">もう一度予約する</button>`
-            : `<button type="button" class="danger-btn" data-action="cancel">キャンセル</button>`
-        }
-      </div>
-    `;
+  <div style="font-weight:700;">${ymdLabel} / ${time}</div>
+  <div style="margin-top:6px; font-size:13px;">${statusLabel}</div>
+  ${
+    rid
+      ? `<div style="opacity:.5; margin-top:6px; font-size:12px;">予約ID: ${rid}</div>`
+      : ""
+  }
+  <div style="margin-top:3px; display:flex; justify-content:flex-end; gap:8px;">
+    ${actionButtons}
+  </div>
+`;
 
     card.addEventListener("click", async (e) => {
       const btn = e.target.closest("button[data-action]");
@@ -1067,6 +1080,23 @@ async function openListView() {
       });
     }
   }
+}
+
+function isPastYmd(ymd) {
+  // ymd: "YYYY-MM-DD"
+  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return false;
+
+  // 今日(Asia/Tokyo)の 00:00
+  const now = new Date();
+  const todayStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now); // "YYYY-MM-DD"
+
+  return ymd < todayStr; // 文字列比較でOK（この形式なら）
 }
 
 // ====== main ======
