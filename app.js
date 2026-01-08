@@ -1125,24 +1125,22 @@ function getPastReservations(items) {
 
 async function openListView() {
   showView("list");
-  setListStatus("読み込み中...");
 
-  log(MSG.listLoading);
+  // ヘッダー（status）にローディング表示
+  log("予約一覧を取得中...");
 
   try {
     const items = await fetchMyReservations();
     renderReservationList(items);
 
-    const active = getActiveReservations(items); // ✅ 現在
-    const past = getPastReservations(items); // ✅ 過去
+    const active = getActiveReservations(items);
+    const past = getPastReservations(items);
 
-    setListStatus(`現在：${active.length}件 / 過去：${past.length}件`);
-    //log(`予約一覧：現在 ${active.length}件 / 過去 ${past.length}件`);
+    // ✅ ここでヘッダーを件数表示に置き換える
+    log(`現在：${active.length}件 / 過去：${past.length}件`);
   } catch (e) {
-    setListStatus("取得できませんでした");
-
     const msg = e?.message || String(e || "予約一覧の取得に失敗しました");
-    logError(`予約一覧の取得に失敗しました（再読み込みしてね）`);
+    logError("予約一覧を取得できませんでした（再読み込みしてね）");
 
     if (listRoot) {
       listRoot.innerHTML = `
@@ -1158,10 +1156,7 @@ async function openListView() {
 
       document
         .getElementById("btnRetryList")
-        ?.addEventListener("click", async () => {
-          await openListView();
-        });
-
+        ?.addEventListener("click", openListView);
       document.getElementById("btnGoReserve")?.addEventListener("click", () => {
         setActiveTab("reserve");
         ensureCalendarView();
