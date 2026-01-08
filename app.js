@@ -899,16 +899,8 @@ function pickReservationYmd(it) {
   );
 }
 
-function pickReservationId(it) {
-  return (
-    it.reservationId ||
-    it.reservation_id ||
-    it.reservationID ||
-    it.rid ||
-    it.id ||
-    it.rowId ||
-    ""
-  );
+function setListStatus(msg) {
+  if (listStatus) listStatus.textContent = msg || "";
 }
 
 function renderReservationList(items) {
@@ -945,7 +937,7 @@ function renderReservationList(items) {
 
     const ymdLabel = fmtYmdJaWithDow(ymdNorm);
 
-    const rid = pickReservationId(it);
+    const rid = it.reservationId || it.id || "";
     const status = it.status || "予約済み";
     const s = String(status || "");
 
@@ -1003,7 +995,7 @@ function renderReservationList(items) {
       }
 
       const action = btn.dataset.action;
-      const targetRid = pickReservationId(it);
+      const targetRid = it.reservationId || it.id;
       if (!targetRid) return;
 
       if (action === "cancel") {
@@ -1016,7 +1008,7 @@ function renderReservationList(items) {
           meta: `${ymdLabel2} / ${time2}\n予約ID: ${targetRid2}`,
           onYes: async () => {
             try {
-              setListStatus("キャンセル中...");
+              setListStatus?.("キャンセル中...");
 
               const { data } = await postJson(GAS_URL, {
                 action: "cancelReservation",
