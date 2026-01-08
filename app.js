@@ -991,11 +991,7 @@ function renderReservationList(items) {
               // ✅ ① 一覧を更新
               const items2 = await fetchMyReservations();
               renderReservationList(items2);
-
-              const activeItems2 = getActiveReservations(items2);
-              setListStatus(
-                activeItems2.length ? `${activeItems2.length}件` : ""
-              );
+              setListStatus(items2.length ? `${items2.length}件` : "");
 
               // ✅ ② この予約日の ym を特定して slots を強制更新
               const ymdRaw2 =
@@ -1131,23 +1127,15 @@ function getActiveReservations(items) {
 async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
+
   log(MSG.listLoading);
 
   try {
     const items = await fetchMyReservations();
-
-    // ✅ これがないと一覧が表示されない
     renderReservationList(items);
-
-    // ✅ 件数は「現在の予約だけ」
-    const activeItems = getActiveReservations(items);
-    setListStatus(activeItems.length ? `${activeItems.length}件` : "");
-
-    log(
-      activeItems.length
-        ? `現在の予約：${activeItems.length}件`
-        : "現在の予約はありません"
-    );
+    setListStatus(items.length ? `${items.length}件` : "");
+    //logInfo("予約一覧を表示したよ");
+    log(items.length ? `予約一覧：${items.length}件` : "予約はまだありません");
   } catch (e) {
     setListStatus("取得できませんでした");
 
