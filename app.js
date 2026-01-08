@@ -889,7 +889,7 @@ function renderReservationList(items) {
 
   // 見出し
   const headingHtml = (label) => `
-    <div style="margin:16px 0 8px; font-size:13px; font-weight:700; color:rgba(0,0,0,.6);">
+    <div class="list-heading">
       ${label}
     </div>
   `;
