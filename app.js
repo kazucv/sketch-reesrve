@@ -1133,9 +1133,12 @@ async function openListView() {
   try {
     const items = await fetchMyReservations();
     renderReservationList(items);
-    setListStatus(items.length ? `${items.length}件` : "");
-    //logInfo("予約一覧を表示したよ");
-    log(items.length ? `予約一覧：${items.length}件` : "予約はまだありません");
+    setListStatus(current.length ? `現在の予約：${current.length}件` : "");
+    log(
+      current.length
+        ? `現在の予約：${current.length}件`
+        : "現在の予約はありません"
+    );
   } catch (e) {
     setListStatus("取得できませんでした");
 
