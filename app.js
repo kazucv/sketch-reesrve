@@ -991,7 +991,9 @@ function renderReservationList(items) {
               // ✅ ① 一覧を更新
               const items2 = await fetchMyReservations();
               renderReservationList(items2);
-              setListStatus(items2.length ? `${items2.length}件` : "");
+              setListStatus(
+                `現在：${current.length}件 / 過去：${past.length}件`
+              );
 
               // ✅ ② この予約日の ym を特定して slots を強制更新
               const ymdRaw2 =
