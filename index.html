@@ -162,6 +162,7 @@
       }
       .flatpickr-current-month .numInputWrapper {
         pointer-events: none;
+        margin-left: auto;
       }
       .flatpickr-months {
         padding: 8px 10px;
@@ -170,6 +171,23 @@
       .flatpickr-current-month {
         font-size: 16px !important;
         font-weight: 800 !important;
+        padding: initial;
+        align-items: center;
+        width: 100%;
+        display: flex;
+      }
+      .flatpickr-months .flatpickr-prev-month,
+      .flatpickr-months .flatpickr-next-month {
+        display: flex;
+        align-items: center;
+      }
+      .flatpickr-months .flatpickr-prev-month,
+      .flatpickr-months .flatpickr-next-month {
+        position: relative;
+        height: initial;
+        padding: 20px 10px;
+        display: flex;
+        align-items: center;
       }
       .flatpickr-weekday {
         color: rgba(0, 0, 0, 0.45) !important;
