@@ -78,19 +78,7 @@ let selectedSlot = null; // slot object
 // ====== utils ======
 const log = (msg) => {
   console.log(msg);
-
-  // 表示中の view があるときだけ、ヘッダーに出す
-  if (
-    (viewCalendar && !viewCalendar.classList.contains("hidden")) ||
-    (viewSlots && !viewSlots.classList.contains("hidden")) ||
-    (viewForm && !viewForm.classList.contains("hidden")) ||
-    (viewConfirm && !viewConfirm.classList.contains("hidden")) ||
-    (viewDone && !viewDone.classList.contains("hidden")) ||
-    (viewList && !viewList.classList.contains("hidden")) ||
-    (viewSettings && !viewSettings.classList.contains("hidden"))
-  ) {
-    if (statusEl) statusEl.textContent = msg;
-  }
+  if (statusEl) statusEl.textContent = msg; // ←UIにも出す
 };
 
 function logInfo(msg) {
@@ -1339,7 +1327,7 @@ function ensureCalendarView() {
   showView("calendar");
   if (!fp) initFlatpickr();
   requestAnimationFrame(() => fp?.redraw?.());
-  log(MSG.calendar);
+  //log(MSG.calendar);
 }
 
 function ensureSlotsView() {
