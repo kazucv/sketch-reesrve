@@ -1136,8 +1136,8 @@ async function openListView() {
     const active = getActiveReservations(items); // ✅ 現在
     const past = getPastReservations(items); // ✅ 過去
 
-    setListStatus(""); // ← 表示しない
-    log("予約一覧を表示したよ");
+    setListStatus(`現在：${active.length}件 / 過去：${past.length}件`);
+    //log(`予約一覧：現在 ${active.length}件 / 過去 ${past.length}件`);
   } catch (e) {
     setListStatus("取得できませんでした");
 
