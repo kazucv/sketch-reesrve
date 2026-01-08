@@ -212,19 +212,25 @@ function setActiveTab(key) {
 }
 
 function showView(name) {
-  viewCalendar.classList.add("hidden");
-  viewSlots.classList.add("hidden");
-  viewForm.classList.add("hidden");
-  viewDone.classList.add("hidden");
-  viewList?.classList.add("hidden");
-  viewConfirm?.classList.add("hidden");
-  viewSettings?.classList.add("hidden");
+  const views = [
+    viewCalendar,
+    viewSlots,
+    viewForm,
+    viewDone,
+    viewList,
+    viewConfirm,
+    viewSettings,
+  ];
 
-  if (name === "calendar") viewCalendar.classList.remove("hidden");
-  if (name === "slots") viewSlots.classList.remove("hidden");
-  if (name === "form") viewForm.classList.remove("hidden");
+  // 全部隠す（nullでも落ちない）
+  views.forEach((v) => v?.classList.add("hidden"));
+
+  // 対象だけ表示（nullでも落ちない）
+  if (name === "calendar") viewCalendar?.classList.remove("hidden");
+  if (name === "slots") viewSlots?.classList.remove("hidden");
+  if (name === "form") viewForm?.classList.remove("hidden");
   if (name === "confirm") viewConfirm?.classList.remove("hidden");
-  if (name === "done") viewDone.classList.remove("hidden");
+  if (name === "done") viewDone?.classList.remove("hidden");
   if (name === "list") viewList?.classList.remove("hidden");
   if (name === "settings") viewSettings?.classList.remove("hidden");
 }
@@ -496,6 +502,10 @@ let didForceWarm = false;
 function initFlatpickr() {
   if (!window.flatpickr) {
     log("flatpickr が読み込めてない…（CDN確認）");
+    return;
+  }
+  if (!dateInput || !calendarRoot) {
+    log("カレンダーDOMが見つからない…（#date / #calendar を確認してね）");
     return;
   }
 
@@ -1199,7 +1209,7 @@ function ensureCalendarView() {
   showView("calendar");
   if (!fp) initFlatpickr();
   requestAnimationFrame(() => fp?.redraw?.());
-  //log(MSG.calendar);
+  log(MSG.calendar);
 }
 
 function ensureSlotsView() {
