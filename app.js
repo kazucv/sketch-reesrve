@@ -616,12 +616,28 @@ function initFlatpickr() {
     },
 
     onDayCreate: (dObj, dStr, fp, dayElem) => {
-      // 枠がある日に “うっすら点” を出す（iOSっぽい雰囲気）
       try {
+        // ✅ まず毎回リセット（前の月の装飾が残る事故防止）
+        dayElem.style.boxShadow = "";
+        dayElem.style.borderRadius = "";
+
+        // ✅ グレー表示（前月/次月のはみ出し日）は絶対に装飾しない
+        if (
+          dayElem.classList.contains("prevMonthDay") ||
+          dayElem.classList.contains("nextMonthDay")
+        ) {
+          return;
+        }
+
+        // ✅ 念のため：表示中の月と違う日付は装飾しない
+        const viewYm = `${fp.currentYear}${pad2(fp.currentMonth + 1)}`;
+
         const y = dayElem.dateObj.getFullYear();
         const m = pad2(dayElem.dateObj.getMonth() + 1);
         const d = pad2(dayElem.dateObj.getDate());
         const ymd = `${y}-${m}-${d}`;
+
+        if (toYmFromYmd(ymd) !== viewYm) return;
 
         const available = getAvailableDaysSet();
         if (available.has(ymd)) {
