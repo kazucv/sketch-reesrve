@@ -862,6 +862,19 @@ function fmtTimeRange(item) {
   return endHm ? `${startHm}〜${endHm}` : startHm || "";
 }
 
+function pickReservationYmd(it) {
+  return (
+    it.ymd ||
+    (it.date
+      ? String(it.date).includes("T")
+        ? ymdFromIso(it.date)
+        : it.date
+      : "") ||
+    (it.start ? ymdFromIso(it.start) : "") ||
+    (it.slotId ? slotIdToYmd(it.slotId) : "")
+  );
+}
+
 function renderReservationList(items) {
   if (!listRoot) return;
   listRoot.innerHTML = "";
@@ -871,20 +884,11 @@ function renderReservationList(items) {
     return;
   }
 
-  // 予約の「日付(YYYY-MM-DD)」を拾う
-  const pickYmd = (x) =>
-    x.ymd ||
-    (x.date
-      ? String(x.date).includes("T")
-        ? ymdFromIso(x.date)
-        : x.date
-      : "") ||
-    (x.start ? ymdFromIso(x.start) : "") ||
-    (x.slotId ? slotIdToYmd(x.slotId) : "");
-
   // ソート：まず日付で（同日内はtimeも見れるなら後で拡張可）
   const sorted = [...items].sort((a, b) =>
-    normalizeYmd(pickYmd(a)).localeCompare(normalizeYmd(pickYmd(b)))
+    normalizeYmd(pickReservationYmd(a) || "").localeCompare(
+      normalizeYmd(pickReservationYmd(b) || "")
+    )
   );
 
   // 見出し
@@ -896,7 +900,7 @@ function renderReservationList(items) {
 
   // 1件のカード生成（it と card要素を返す）
   const buildCard = (it) => {
-    const ymdRaw = pickYmd(it);
+    const ymdRaw = pickReservationYmd(it);
     const ymdNorm = normalizeYmd(ymdRaw || "");
     const time = fmtTimeRange(it);
 
@@ -992,22 +996,11 @@ function renderReservationList(items) {
               const items2 = await fetchMyReservations();
               renderReservationList(items2);
               const active2 = getActiveReservations(items2);
-              setListStatus(
-                active2.length ? `現在の予約：${active2.length}件` : ""
-              );
+              setListStatus("");
 
               // ✅ ② この予約日の ym を特定して slots を強制更新
-              const ymdRaw2 =
-                it.ymd ||
-                (it.date
-                  ? String(it.date).includes("T")
-                    ? ymdFromIso(it.date)
-                    : it.date
-                  : "") ||
-                (it.start ? ymdFromIso(it.start) : "") ||
-                (it.slotId ? slotIdToYmd(it.slotId) : "");
+              const ymd2 = normalizeYmd(pickReservationYmd(it) || "");
 
-              const ymd2 = normalizeYmd(ymdRaw2);
               const ym2 = toYmFromYmd(ymd2);
 
               await refreshSlotsYm(ym2);
@@ -1025,17 +1018,7 @@ function renderReservationList(items) {
       }
 
       if (action === "rebook") {
-        const ymdRaw2 =
-          it.ymd ||
-          (it.date
-            ? String(it.date).includes("T")
-              ? ymdFromIso(it.date)
-              : it.date
-            : "") ||
-          (it.start ? ymdFromIso(it.start) : "") ||
-          (it.slotId ? slotIdToYmd(it.slotId) : "");
-
-        const ymd2 = normalizeYmd(ymdRaw2);
+        const ymd2 = normalizeYmd(pickReservationYmd(it) || "");
 
         setActiveTab("reserve");
         ensureCalendarView();
@@ -1074,25 +1057,31 @@ function renderReservationList(items) {
 
   // 現在の予約：日付が近い順（昇順）
   current.sort((a, b) => {
-    const da = normalizeYmd(pickYmd(a.it));
-    const db = normalizeYmd(pickYmd(b.it));
+    const da = normalizeYmd(pickReservationYmd(a.it) || "");
+    const db = normalizeYmd(pickReservationYmd(b.it) || "");
     return da.localeCompare(db);
   });
 
   // 過去の予約：新しい順（降順）
   past.sort((a, b) => {
-    const da = normalizeYmd(pickYmd(a.it));
-    const db = normalizeYmd(pickYmd(b.it));
+    const da = normalizeYmd(pickReservationYmd(a.it) || "");
+    const db = normalizeYmd(pickReservationYmd(b.it) || "");
     return db.localeCompare(da);
   });
 
   if (current.length) {
-    listRoot.insertAdjacentHTML("beforeend", headingHtml("現在の予約"));
+    listRoot.insertAdjacentHTML(
+      "beforeend",
+      headingHtml(`現在の予約（${current.length}）`)
+    );
     current.forEach((obj) => listRoot.appendChild(obj.card));
   }
 
   if (past.length) {
-    listRoot.insertAdjacentHTML("beforeend", headingHtml("過去の予約"));
+    listRoot.insertAdjacentHTML(
+      "beforeend",
+      headingHtml(`過去の予約（${past.length}）`)
+    );
     past.forEach((obj) => listRoot.appendChild(obj.card));
   }
 
@@ -1104,17 +1093,8 @@ function renderReservationList(items) {
 
 function getActiveReservations(items) {
   return items.filter((it) => {
-    const ymdRaw =
-      it.ymd ||
-      (it.date
-        ? String(it.date).includes("T")
-          ? ymdFromIso(it.date)
-          : it.date
-        : "") ||
-      (it.start ? ymdFromIso(it.start) : "") ||
-      (it.slotId ? slotIdToYmd(it.slotId) : "");
+    const ymd = normalizeYmd(pickReservationYmd(it) || "");
 
-    const ymd = normalizeYmd(ymdRaw || "");
     const time = fmtTimeRange(it);
     const isPast = isPastByYmdAndTime(ymd, time);
 
@@ -1129,17 +1109,8 @@ function getActiveReservations(items) {
 
 function getPastReservations(items) {
   return items.filter((it) => {
-    const ymdRaw =
-      it.ymd ||
-      (it.date
-        ? String(it.date).includes("T")
-          ? ymdFromIso(it.date)
-          : it.date
-        : "") ||
-      (it.start ? ymdFromIso(it.start) : "") ||
-      (it.slotId ? slotIdToYmd(it.slotId) : "");
+    const ymd = normalizeYmd(pickReservationYmd(it) || "");
 
-    const ymd = normalizeYmd(ymdRaw || "");
     const time = fmtTimeRange(it);
     const isPast = isPastByYmdAndTime(ymd, time);
 
@@ -1165,8 +1136,8 @@ async function openListView() {
     const active = getActiveReservations(items); // ✅ 現在
     const past = getPastReservations(items); // ✅ 過去
 
-    setListStatus(`現在：${active.length}件 / 過去：${past.length}件`);
-    log(`予約一覧：現在 ${active.length}件 / 過去 ${past.length}件`);
+    setListStatus(""); // ← 表示しない
+    log("予約一覧を表示したよ");
   } catch (e) {
     setListStatus("取得できませんでした");
 
@@ -1218,7 +1189,7 @@ function isPastByYmdAndTime(ymd, timeRange) {
     end = new Date(`${ymd}T23:59:59+09:00`);
   }
 
-  return end.getTime() < now;
+  return end.getTime() <= now;
 }
 
 // ====== main ======
