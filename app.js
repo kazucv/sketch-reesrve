@@ -888,7 +888,7 @@ function renderReservationList(items) {
   sorted.forEach((it) => {
     const ymdRaw = pickYmd(it);
     const ymdNorm = normalizeYmd(ymdRaw || "");
-    const isPast = isPastYmd(ymdNorm);
+    const isPast = isPastByYmdAndTime(ymdNorm, time);
     const ymdLabel = fmtYmdJaWithDow(normalizeYmd(ymdRaw || ""));
     const time = fmtTimeRange(it);
 
@@ -1082,21 +1082,26 @@ async function openListView() {
   }
 }
 
-function isPastYmd(ymd) {
-  // ymd: "YYYY-MM-DD"
-  const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return false;
+function isPastByYmdAndTime(ymd, timeRange) {
+  if (!ymd) return false;
 
-  // 今日(Asia/Tokyo)の 00:00
-  const now = new Date();
-  const todayStr = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now); // "YYYY-MM-DD"
+  const now = Date.now();
+  const clean = String(timeRange || "").replace(/\s/g, "");
 
-  return ymd < todayStr; // 文字列比較でOK（この形式なら）
+  // "10:00〜11:00" を想定
+  const parts = clean.split("〜");
+
+  let end;
+
+  if (parts.length >= 2) {
+    // 終了時刻で判定
+    end = new Date(`${ymd}T${parts[1]}:00+09:00`);
+  } else {
+    // 時間が取れない場合 → その日の終わり
+    end = new Date(`${ymd}T23:59:59+09:00`);
+  }
+
+  return end.getTime() < now;
 }
 
 // ====== main ======
