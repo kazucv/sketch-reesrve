@@ -991,7 +991,10 @@ function renderReservationList(items) {
               // ✅ ① 一覧を更新
               const items2 = await fetchMyReservations();
               renderReservationList(items2);
-              setListStatus(items2.length ? `${items2.length}件` : "");
+              const active2 = getActiveReservations(items2);
+              setListStatus(
+                active2.length ? `現在の予約：${active2.length}件` : ""
+              );
 
               // ✅ ② この予約日の ym を特定して slots を強制更新
               const ymdRaw2 =
@@ -1133,10 +1136,12 @@ async function openListView() {
   try {
     const items = await fetchMyReservations();
     renderReservationList(items);
-    setListStatus(current.length ? `現在の予約：${current.length}件` : "");
+
+    const active = getActiveReservations(items); // ✅「現在の予約」だけ抽出
+    setListStatus(active.length ? `現在の予約：${active.length}件` : "");
     log(
-      current.length
-        ? `現在の予約：${current.length}件`
+      active.length
+        ? `現在の予約：${active.length}件`
         : "現在の予約はありません"
     );
   } catch (e) {
