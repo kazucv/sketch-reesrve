@@ -991,8 +991,10 @@ function renderReservationList(items) {
               // ✅ ① 一覧を更新
               const items2 = await fetchMyReservations();
               renderReservationList(items2);
+
+              const activeItems2 = getActiveReservations(items2);
               setListStatus(
-                `現在：${current.length}件 / 過去：${past.length}件`
+                activeItems2.length ? `${activeItems2.length}件` : ""
               );
 
               // ✅ ② この予約日の ym を特定して slots を強制更新
@@ -1101,6 +1103,31 @@ function renderReservationList(items) {
   }
 }
 
+function getActiveReservations(items) {
+  return items.filter((it) => {
+    const ymdRaw =
+      it.ymd ||
+      (it.date
+        ? String(it.date).includes("T")
+          ? ymdFromIso(it.date)
+          : it.date
+        : "") ||
+      (it.start ? ymdFromIso(it.start) : "") ||
+      (it.slotId ? slotIdToYmd(it.slotId) : "");
+
+    const ymd = normalizeYmd(ymdRaw || "");
+    const time = fmtTimeRange(it);
+    const isPast = isPastByYmdAndTime(ymd, time);
+
+    const s = String(it.status || "");
+    const isCanceled =
+      s.includes("キャンセル") || s.includes("取消") || s.includes("cancel");
+
+    // 「未来 or 今日」かつ「キャンセルじゃない」
+    return !isPast && !isCanceled;
+  });
+}
+
 async function openListView() {
   showView("list");
   setListStatus("読み込み中...");
@@ -1109,10 +1136,14 @@ async function openListView() {
 
   try {
     const items = await fetchMyReservations();
-    renderReservationList(items);
-    setListStatus(items.length ? `${items.length}件` : "");
-    //logInfo("予約一覧を表示したよ");
-    log(items.length ? `予約一覧：${items.length}件` : "予約はまだありません");
+
+    const activeItems = getActiveReservations(items);
+    setListStatus(activeItems.length ? `${activeItems.length}件` : "");
+    log(
+      activeItems.length
+        ? `現在の予約：${activeItems.length}件`
+        : "現在の予約はありません"
+    );
   } catch (e) {
     setListStatus("取得できませんでした");
 
