@@ -673,7 +673,9 @@ function renderSlotsForSelectedDate() {
   log(`枠OK: ${slots.length}件（時間を選んでね）`);
 
   // ✅ slotCount に「○月○日（○）」
-  if (slotCount) slotCount.textContent = fmtMdWithDow(selectedDate);
+  if (slotCount) {
+    slotCount.textContent = fmtYmdJaWithDow(selectedDate);
+  }
 
   const am = slots.filter((s) => isAM(s));
   const pm = slots.filter((s) => !isAM(s));
