@@ -151,14 +151,32 @@
         color: rgba(0, 0, 0, 0.6);
       }
 
-      #calendar {
-      }
       .flatpickr-calendar {
         width: 100% !important;
         border: 0 !important;
         border-radius: var(--radius-lg) !important;
         box-shadow: var(--shadow) !important;
         overflow: hidden;
+      }
+      /* 年の input を完全に無効化 */
+      .flatpickr-current-month input.cur-year {
+        pointer-events: none !important;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        outline: none;
+        cursor: default;
+      }
+
+      /* hover / focus の見た目も消す */
+      .flatpickr-current-month input.cur-year:hover,
+      .flatpickr-current-month input.cur-year:focus {
+        background: transparent;
+        box-shadow: none;
+        outline: none;
       }
       .flatpickr-months {
         padding: 8px 10px;
