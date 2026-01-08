@@ -871,6 +871,7 @@ function renderReservationList(items) {
     return;
   }
 
+  // 予約の「日付(YYYY-MM-DD)」を拾う
   const pickYmd = (x) =>
     x.ymd ||
     (x.date
@@ -881,16 +882,26 @@ function renderReservationList(items) {
     (x.start ? ymdFromIso(x.start) : "") ||
     (x.slotId ? slotIdToYmd(x.slotId) : "");
 
+  // ソート：まず日付で（同日内はtimeも見れるなら後で拡張可）
   const sorted = [...items].sort((a, b) =>
     normalizeYmd(pickYmd(a)).localeCompare(normalizeYmd(pickYmd(b)))
   );
 
-  sorted.forEach((it) => {
+  // 見出し
+  const headingHtml = (label) => `
+    <div style="margin:16px 0 8px; font-size:13px; font-weight:700; color:rgba(0,0,0,.6);">
+      ${label}
+    </div>
+  `;
+
+  // 1件のカード生成（it と card要素を返す）
+  const buildCard = (it) => {
     const ymdRaw = pickYmd(it);
     const ymdNorm = normalizeYmd(ymdRaw || "");
-    const time = fmtTimeRange(it); // ✅ 先にtimeを作る！
+    const time = fmtTimeRange(it);
 
-    const isPast = isPastByYmdAndTime(ymdNorm, time); // ✅ timeの後に判定する
+    // ✅ ここが肝：日付 + time で過去判定
+    const isPast = isPastByYmdAndTime(ymdNorm, time);
 
     const ymdLabel = fmtYmdJaWithDow(ymdNorm);
 
@@ -900,47 +911,50 @@ function renderReservationList(items) {
 
     const isCanceled =
       s.includes("キャンセル") || s.includes("取消") || s.includes("cancel");
+    const isDone = s.includes("完了");
 
     const statusLabel = isCanceled
       ? "⚫️ キャンセル"
       : s.includes("予約")
       ? "🟢 予約済み"
-      : s.includes("完了")
+      : isDone
       ? "⚪️ 完了"
       : `⚪️ ${s || "不明"}`;
 
+    // ボタン：過去は出さない（運用として安全）
+    let actionButtons = "";
+    if (!isPast) {
+      if (isCanceled) {
+        actionButtons = `
+          <button type="button" class="ghost-btn" data-action="rebook">
+            もう一度予約する
+          </button>
+        `;
+      } else {
+        actionButtons = `
+          <button type="button" class="danger-btn" data-action="cancel">
+            キャンセル
+          </button>
+        `;
+      }
+    }
+
     const card = document.createElement("div");
     card.className = "card";
-
-    // ✅ 最初からボタンを描画しておく
-    let actionButtons = "";
-
-    if (isCanceled && !isPast) {
-      actionButtons = `
-    <button type="button" class="ghost-btn" data-action="rebook">
-      もう一度予約する
-    </button>
-  `;
-    } else if (!isCanceled && !isPast) {
-      actionButtons = `
-    <button type="button" class="danger-btn" data-action="cancel">
-      キャンセル
-    </button>
-  `;
-    }
     card.innerHTML = `
-  <div style="font-weight:700;">${ymdLabel} / ${time}</div>
-  <div style="margin-top:6px; font-size:13px;">${statusLabel}</div>
-  ${
-    rid
-      ? `<div style="opacity:.5; margin-top:6px; font-size:12px;">予約ID: ${rid}</div>`
-      : ""
-  }
-  <div style="margin-top:3px; display:flex; justify-content:flex-end; gap:8px;">
-    ${actionButtons}
-  </div>
-`;
+      <div style="font-weight:700;">${ymdLabel} / ${time}</div>
+      <div style="margin-top:6px; font-size:13px;">${statusLabel}</div>
+      ${
+        rid
+          ? `<div style="opacity:.5; margin-top:6px; font-size:12px;">予約ID: ${rid}</div>`
+          : ""
+      }
+      <div style="margin-top:3px; display:flex; justify-content:flex-end; gap:8px;">
+        ${actionButtons}
+      </div>
+    `;
 
+    // クリック（ボタンだけ反応）
     card.addEventListener("click", async (e) => {
       const btn = e.target.closest("button[data-action]");
       if (!btn) {
@@ -953,7 +967,7 @@ function renderReservationList(items) {
       if (!targetRid) return;
 
       if (action === "cancel") {
-        const ymdLabel2 = ymdLabel; // 表示用
+        const ymdLabel2 = ymdLabel;
         const time2 = time;
         const targetRid2 = targetRid;
 
@@ -980,7 +994,7 @@ function renderReservationList(items) {
               setListStatus(items2.length ? `${items2.length}件` : "");
 
               // ✅ ② この予約日の ym を特定して slots を強制更新
-              const ymdRaw =
+              const ymdRaw2 =
                 it.ymd ||
                 (it.date
                   ? String(it.date).includes("T")
@@ -990,11 +1004,11 @@ function renderReservationList(items) {
                 (it.start ? ymdFromIso(it.start) : "") ||
                 (it.slotId ? slotIdToYmd(it.slotId) : "");
 
-              const ymd = normalizeYmd(ymdRaw);
-              const ym = toYmFromYmd(ymd);
+              const ymd2 = normalizeYmd(ymdRaw2);
+              const ym2 = toYmFromYmd(ymd2);
 
-              await refreshSlotsYm(ym); // ★ GAS + フロント 両方リフレッシュ
-              fp?.redraw?.(); // ★ カレンダーの点も即更新
+              await refreshSlotsYm(ym2);
+              fp?.redraw?.();
 
               log("キャンセルしたよ");
             } catch (err) {
@@ -1008,7 +1022,7 @@ function renderReservationList(items) {
       }
 
       if (action === "rebook") {
-        const ymdRaw =
+        const ymdRaw2 =
           it.ymd ||
           (it.date
             ? String(it.date).includes("T")
@@ -1018,26 +1032,71 @@ function renderReservationList(items) {
           (it.start ? ymdFromIso(it.start) : "") ||
           (it.slotId ? slotIdToYmd(it.slotId) : "");
 
-        const ymd = normalizeYmd(ymdRaw);
+        const ymd2 = normalizeYmd(ymdRaw2);
 
         setActiveTab("reserve");
-        ensureCalendarView(); // ✅ fp生成もここで担保
+        ensureCalendarView();
         log("空きを確認してるよ...");
 
         try {
-          const ym = toYmFromYmd(ymd);
-          await refreshSlotsYm(ym); // ★最新の空きを取りに行く
-
-          fp?.setDate(ymd, true); // ★onChange発火 → slots画面へ遷移するのは onChange に任せる
-          // ❌ log(MSG.slots); ← これは消す（見えてないのに「時間を選んでね」になる事故源）
-        } catch (e) {
-          log(`ERROR: ${e?.message || e}`);
+          const ym2 = toYmFromYmd(ymd2);
+          await refreshSlotsYm(ym2);
+          fp?.setDate(ymd2, true); // onChangeでslotsへ
+        } catch (e2) {
+          log(`ERROR: ${e2?.message || e2}`);
         }
       }
     });
 
-    listRoot.appendChild(card);
+    // 仕分け用の情報も返す
+    const isCurrent = !isPast && !isCanceled && !isDone;
+
+    return { card, isCurrent, isPast };
+  };
+
+  // ====== ここから「現在 / 過去」に分けて描画 ======
+  const current = [];
+  const past = [];
+
+  sorted.forEach((it) => {
+    const built = buildCard(it);
+    if (built.isCurrent) {
+      current.push({ it, card: built.card });
+    } else {
+      past.push({ it, card: built.card });
+    }
   });
+
+  // ===== 並び順調整 =====
+
+  // 現在の予約：日付が近い順（昇順）
+  current.sort((a, b) => {
+    const da = normalizeYmd(pickYmd(a.it));
+    const db = normalizeYmd(pickYmd(b.it));
+    return da.localeCompare(db);
+  });
+
+  // 過去の予約：新しい順（降順）
+  past.sort((a, b) => {
+    const da = normalizeYmd(pickYmd(a.it));
+    const db = normalizeYmd(pickYmd(b.it));
+    return db.localeCompare(da);
+  });
+
+  if (current.length) {
+    listRoot.insertAdjacentHTML("beforeend", headingHtml("現在の予約"));
+    current.forEach((obj) => listRoot.appendChild(obj.card));
+  }
+
+  if (past.length) {
+    listRoot.insertAdjacentHTML("beforeend", headingHtml("過去の予約"));
+    past.forEach((obj) => listRoot.appendChild(obj.card));
+  }
+
+  // どっちも0の時（理屈上は起きにくいけど保険）
+  if (!current.length && !past.length) {
+    listRoot.innerHTML = `<div style="opacity:.7;">予約はまだありません。</div>`;
+  }
 }
 
 async function openListView() {
