@@ -191,12 +191,13 @@ function scrollToTopSmart(viewEl) {
 }
 
 function setupPullToRefresh({
+  gestureEl,
   scroller,
   indicator,
   threshold = 40,
   onRefresh,
 }) {
-  if (!scroller) return;
+  if (!gestureEl || !scroller) return;
 
   let startY = 0;
   let pulling = false;
@@ -212,7 +213,6 @@ function setupPullToRefresh({
   const setIndicator = (state) => {
     if (!indicator) return;
 
-    // ✅ 最初は隠す。表示が必要になった時だけ出す
     if (state === "hide") {
       indicator.classList.add("hidden");
       indicator.textContent = "";
@@ -235,20 +235,30 @@ function setupPullToRefresh({
         : "";
   };
 
-  // ✅ 起動直後は絶対隠す
   setIndicator("hide");
 
-  let lastDy = 0;
+  gestureEl.addEventListener(
+    "touchstart",
+    (e) => {
+      if (busy) return;
+      if (isInteractive(e.target)) return;
+      if (scroller.scrollTop > 0) return;
 
-  scroller.addEventListener(
+      startY = e.touches[0].clientY;
+      pulling = true;
+      triggered = false;
+      setIndicator("hide"); // touchstartでは出さない
+    },
+    { passive: true }
+  );
+
+  gestureEl.addEventListener(
     "touchmove",
     (e) => {
       if (!pulling || busy) return;
       if (scroller.scrollTop > 0) return;
 
       const dy = e.touches[0].clientY - startY;
-      lastDy = dy;
-
       if (dy < 8) return;
 
       if (dy > threshold) {
@@ -262,36 +272,7 @@ function setupPullToRefresh({
     { passive: true }
   );
 
-  scroller.addEventListener(
-    "touchend",
-    async () => {
-      if (!pulling || busy) return;
-      pulling = false;
-
-      // ✅ 最終dyで最終判定
-      const willRefresh = lastDy > threshold;
-
-      console.log("PTR end:", { lastDy, threshold, willRefresh });
-
-      if (!willRefresh) {
-        setIndicator("hide");
-        return;
-      }
-
-      try {
-        busy = true;
-        setIndicator("loading");
-        await onRefresh?.();
-      } finally {
-        busy = false;
-        setIndicator("hide");
-        lastDy = 0;
-      }
-    },
-    { passive: true }
-  );
-
-  scroller.addEventListener(
+  gestureEl.addEventListener(
     "touchend",
     async () => {
       if (!pulling || busy) return;
@@ -471,6 +452,7 @@ function showView(name) {
     const contentEl = document.querySelector("main.content");
     const scrollerEl = findScrollContainer(contentEl);
     if (contentEl) contentEl.scrollTop = 0;
+    if (scrollerEl) scrollerEl.scrollTop = 0;
   });
 }
 
@@ -1683,26 +1665,23 @@ async function run() {
   const contentEl = document.querySelector("main.content");
   const ptrEl = document.getElementById("ptr");
 
-  // ✅ ここで scrollerEl を必ず作る
   const scrollerEl =
-    findScrollContainer?.(contentEl) ||
+    findScrollContainer(contentEl) ||
     contentEl ||
     document.scrollingElement ||
     document.documentElement;
 
   setupPullToRefresh({
-    scroller: contentEl,
+    gestureEl: contentEl, // ←触る場所
+    scroller: scrollerEl, // ←scrollTop判定する本丸
     indicator: ptrEl,
     onRefresh: async () => {
-      // ✅ 一覧表示中は openListView に全部任せる（ローディングも含む）
       if (isViewVisible(viewList)) {
         await openListView();
         return;
       }
 
-      // ✅ カレンダー/枠側もローディングを出す
       setLoading(true, "空き枠を更新中...");
-
       try {
         const ymd = selectedDate || todayYmdJst();
         const ym = toYmFromYmd(ymd);
