@@ -808,7 +808,7 @@ async function reserveSelected() {
   if (!r.data?.ok) {
     const msg = String(r.data?.message || "");
 
-    // ここ：埋まってた系は「自動で最新に更新」してから案内
+    // ここ：埋まってた系は「自動で最新に更新」してから案内（ここは待つ）
     const isAlready =
       msg === "slot_already_reserved" ||
       msg === "slot_already_booked" ||
@@ -819,7 +819,7 @@ async function reserveSelected() {
         log("今ちょうど別の予定が入ったみたい。最新の空きを読み込み直すね…");
 
         const ym = toYmFromYmd(selectedDate);
-        await refreshSlotsYm(ym); // ✅ force=trueで取り直す
+        await refreshSlotsYm(ym); // ✅ force=trueで取り直す（ここは await のまま）
         fp?.redraw?.(); // ✅ カレンダーの点も更新
 
         // slots画面が開いてるなら再描画
@@ -841,16 +841,31 @@ async function reserveSelected() {
     return;
   }
 
-  // ✅ 成功
+  // ✅ 成功（ここから “体感優先”）
   showDone(r.data);
 
   // ✅ 備考だけクリア（連続予約でも事故らない）
   resetNoteOnly();
+
+  // ✅ 参照を保持（selectedSlot / fp / selectedDate が後で変わっても安全に）
+  const ym = toYmFromYmd(selectedDate);
+  const fpRef = fp;
+
+  // ✅ 予約フロー上はここで選択を外してOK
   selectedSlot = null;
 
-  const ym = toYmFromYmd(selectedDate);
-  await refreshSlotsYm(ym);
-  fp?.redraw?.();
+  // ✅ ここから先は “裏で最新化” ：awaitしない
+  //    1フレーム空けると、done描画→ローディングOFFが先に体感できて気持ちいい
+  requestAnimationFrame(() => {
+    Promise.resolve().then(async () => {
+      try {
+        await refreshSlotsYm(ym);
+        fpRef?.redraw?.();
+      } catch (e) {
+        console.warn("bg refreshSlots failed", e);
+      }
+    });
+  });
 }
 
 function renderConfirmSummary() {
@@ -1078,40 +1093,58 @@ function renderReservationList(items) {
           message: "本当にキャンセルしますか？",
           meta: `${ymdLabel2} / ${time2}\n予約ID: ${targetRid2}`,
           onYes: async () => {
-            setLoading(true, "キャンセル処理中...");
+            const ymd2 = normalizeYmd(pickReservationYmd(it) || "");
+            const ym2 = toYmFromYmd(ymd2);
+
+            // ✅ ここだけ“確定処理”として待つ（＝ここで成功が確定）
             try {
+              setLoading(true, "キャンセルを確定中...");
               setListStatus?.("キャンセル中...");
 
-              const { data } = await postJson(GAS_URL, {
-                action: "cancelReservation",
-                userId: profile.userId,
-                reservationId: targetRid2,
-              });
+              const { data } = await postJson(
+                GAS_URL,
+                {
+                  action: "cancelReservation",
+                  userId: profile.userId,
+                  reservationId: targetRid2,
+                },
+                10000
+              );
 
               if (!data?.ok) {
                 throw new Error(data?.message || "キャンセルに失敗しました");
               }
 
-              // ✅ ① 一覧を更新
-              const items2 = await fetchMyReservations();
-              renderReservationList(items2);
-              const active2 = getActiveReservations(items2);
-              setListStatus("");
-
-              // ✅ ② この予約日の ym を特定して slots を強制更新
-              const ymd2 = normalizeYmd(pickReservationYmd(it) || "");
-
-              const ym2 = toYmFromYmd(ymd2);
-
-              await refreshSlotsYm(ym2);
-              fp?.redraw?.();
-
-              log("キャンセルしたよ");
-            } catch (err) {
-              setListStatus("キャンセルできませんでした");
-              log(`ERROR: ${err?.message || err}`);
-            } finally {
+              // ✅ 成功確定！ここでローディングOFF＆即反映（体感速度重視）
               setLoading(false);
+              setListStatus?.("キャンセルしました");
+
+              // いったん“見た目だけ”即更新（すぐに「キャンセル」表示にして安心させる）
+              // ※ 手元の it を再描画するだけだと複雑なので、簡易に一覧を取り直さずにステータス表示だけ先に出す
+              // ※ 次のバック更新で整合性を取る
+              log("キャンセルしたよ");
+
+              // ✅ 残りはバックで（一覧更新・slots更新・カレンダー点更新）
+              setTimeout(async () => {
+                try {
+                  const items2 = await fetchMyReservations();
+                  renderReservationList(items2);
+
+                  // slots側も更新（キャンセル枠を空きに戻す）
+                  await refreshSlotsYm(ym2);
+                  fp?.redraw?.();
+
+                  setListStatus?.("");
+                } catch (e) {
+                  console.warn("background update failed:", e);
+                  // バック更新失敗は致命じゃないので、UIだけ軽く案内
+                  setListStatus?.("一覧の更新に失敗しました（再表示してね）");
+                }
+              }, 0);
+            } catch (err) {
+              setLoading(false);
+              setListStatus?.("キャンセルできませんでした");
+              log(`ERROR: ${err?.message || err}`);
             }
           },
         });
@@ -1231,8 +1264,10 @@ function getPastReservations(items) {
 async function openListView() {
   showView("list");
 
-  // ヘッダー（status）にローディング表示
+  // ✅ 体感UX：ローディングON（一覧取得中）
   setLoading(true, "予約一覧を取得中...");
+
+  // ヘッダー（status）にも表示
   log("予約一覧を取得中...");
 
   try {
@@ -1242,8 +1277,9 @@ async function openListView() {
     const active = getActiveReservations(items);
     const past = getPastReservations(items);
 
-    // ✅ ここでヘッダーを件数表示に置き換える
+    // ✅ ヘッダーを件数表示に置き換え
     log(`現在の予約：${active.length}件 / 過去の予約：${past.length}件`);
+    setListStatus?.("");
   } catch (e) {
     const msg = e?.message || String(e || "予約一覧の取得に失敗しました");
     logError("予約一覧を取得できませんでした（再読み込みしてね）");
@@ -1263,13 +1299,14 @@ async function openListView() {
       document
         .getElementById("btnRetryList")
         ?.addEventListener("click", openListView);
+
       document.getElementById("btnGoReserve")?.addEventListener("click", () => {
         setActiveTab("reserve");
         ensureCalendarView();
       });
     }
   } finally {
-    // ✅ ローディングOFF（成功/失敗どっちでも確実に消す）
+    // ✅ 成否に関わらずローディングOFF
     setLoading(false);
   }
 }
@@ -1342,18 +1379,19 @@ async function run() {
     });
 
     confirmSubmitBtn?.addEventListener("click", async () => {
-      setLoading(true, "予約処理中...");
       try {
-        // 二重送信防止
         confirmSubmitBtn.disabled = true;
         confirmSubmitBtn.textContent = "予約しています...";
 
-        await reserveSelected(); // ✅ここで初めて予約API
+        setLoading(true, "予約を確定中..."); // ★追加
+
+        await reserveSelected(); // ★成功時は中で showDone まで行く
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
         console.error(e);
       } finally {
-        setLoading(false);
+        setLoading(false); // ★追加：成功確定で即OFF
+
         confirmSubmitBtn.disabled = false;
         confirmSubmitBtn.textContent = "この内容で予約する";
       }
