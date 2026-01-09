@@ -245,6 +245,8 @@ function setupPullToRefresh({
       const dy = e.touches[0].clientY - startY;
       if (dy <= 0) return;
 
+      e.preventDefault();
+
       // dyが閾値を超えたら「離して更新」表示
       if (dy > threshold) {
         triggered = true;
@@ -254,7 +256,7 @@ function setupPullToRefresh({
         setIndicator("pull");
       }
     },
-    { passive: true }
+    { passive: false } // ✅ ここが超重要
   );
 
   scroller.addEventListener(
@@ -437,6 +439,7 @@ function showView(name) {
 
     // ✅ PTRのscrollerも必ず0にする（ここ大事）
     const contentEl = document.querySelector("main.content");
+    const scrollerEl = findScrollContainer(contentEl);
     if (contentEl) contentEl.scrollTop = 0;
   });
 }
@@ -1652,6 +1655,7 @@ async function run() {
 
   setupPullToRefresh({
     scroller: contentEl,
+    scroller: scrollerEl,
     indicator: ptrEl,
     onRefresh: async () => {
       // ✅ 一覧表示中は openListView に全部任せる（ローディングも含む）
