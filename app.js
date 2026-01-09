@@ -190,6 +190,102 @@ function scrollToTopSmart(viewEl) {
     });
 }
 
+function setupPullToRefresh({
+  scroller,
+  indicator,
+  threshold = 70,
+  onRefresh,
+}) {
+  if (!scroller) return;
+
+  let startY = 0;
+  let pulling = false;
+  let triggered = false;
+  let busy = false;
+
+  const setIndicator = (state) => {
+    if (!indicator) return;
+    indicator.classList.remove("hidden");
+    indicator.textContent =
+      state === "pull"
+        ? "引っ張って更新"
+        : state === "release"
+        ? "離して更新"
+        : state === "loading"
+        ? "更新中…"
+        : " ";
+    if (state === "hide") indicator.classList.add("hidden");
+  };
+
+  scroller.addEventListener(
+    "touchstart",
+    (e) => {
+      if (busy) return;
+      if (scroller.scrollTop !== 0) return; // 上端じゃないと開始しない
+      startY = e.touches[0].clientY;
+      pulling = true;
+      triggered = false;
+      setIndicator("pull");
+    },
+    { passive: true }
+  );
+
+  scroller.addEventListener(
+    "touchmove",
+    (e) => {
+      console.log(
+        "PTR touchstart / scroller:",
+        scroller,
+        "scrollTop:",
+        scroller.scrollTop
+      );
+
+      if (!pulling || busy) return;
+      if (scroller.scrollTop !== 0) return;
+
+      const dy = e.touches[0].clientY - startY;
+      if (dy <= 0) return;
+
+      // dyが閾値を超えたら「離して更新」表示
+      if (dy > threshold) {
+        triggered = true;
+        setIndicator("release");
+      } else {
+        triggered = false;
+        setIndicator("pull");
+      }
+    },
+    { passive: true }
+  );
+
+  scroller.addEventListener(
+    "touchend",
+    async () => {
+      if (!pulling || busy) return;
+      pulling = false;
+
+      if (!triggered) {
+        setIndicator("hide");
+        return;
+      }
+
+      try {
+        busy = true;
+        setIndicator("loading");
+        await onRefresh?.();
+        console.log("✅ pull refresh done");
+      } catch (e) {
+        console.error("❌ pull refresh failed", e);
+        logError(`更新できなかった… ${e?.message || e}`);
+      } finally {
+        busy = false;
+        setIndicator("hide");
+      }
+    },
+    { passive: true }
+  );
+}
+
 // ====== modal (cancel confirm) ======
 const modalOverlay = document.getElementById("modalOverlay");
 const cancelModal = document.getElementById("cancelModal");
@@ -1550,115 +1646,29 @@ async function run() {
     setActiveTab("reserve");
     ensureCalendarView();
   }
-}
 
-function setupPullToRefresh({
-  scroller,
-  indicator,
-  threshold = 70,
-  onRefresh,
-}) {
-  if (!scroller) return;
+  // run() の中：profile取得後に追加
+  const contentEl = document.querySelector("main.content");
+  const ptrEl = document.getElementById("ptr");
 
-  let startY = 0;
-  let pulling = false;
-  let triggered = false;
-  let busy = false;
-
-  const setIndicator = (state) => {
-    if (!indicator) return;
-    indicator.classList.remove("hidden");
-    indicator.textContent =
-      state === "pull"
-        ? "引っ張って更新"
-        : state === "release"
-        ? "離して更新"
-        : state === "loading"
-        ? "更新中…"
-        : " ";
-    if (state === "hide") indicator.classList.add("hidden");
-  };
-
-  scroller.addEventListener(
-    "touchstart",
-    (e) => {
-      if (busy) return;
-      if (scroller.scrollTop !== 0) return; // 上端じゃないと開始しない
-      startY = e.touches[0].clientY;
-      pulling = true;
-      triggered = false;
-      setIndicator("pull");
-    },
-    { passive: true }
-  );
-
-  scroller.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!pulling || busy) return;
-      if (scroller.scrollTop !== 0) return;
-
-      const dy = e.touches[0].clientY - startY;
-      if (dy <= 0) return;
-
-      // dyが閾値を超えたら「離して更新」表示
-      if (dy > threshold) {
-        triggered = true;
-        setIndicator("release");
-      } else {
-        triggered = false;
-        setIndicator("pull");
-      }
-    },
-    { passive: true }
-  );
-
-  scroller.addEventListener(
-    "touchend",
-    async () => {
-      if (!pulling || busy) return;
-      pulling = false;
-
-      if (!triggered) {
-        setIndicator("hide");
+  setupPullToRefresh({
+    scroller: contentEl,
+    indicator: ptrEl,
+    onRefresh: async () => {
+      // ここは安心して profile を使える
+      if (isViewVisible(viewList)) {
+        await openListView();
         return;
       }
 
-      try {
-        busy = true;
-        setIndicator("loading");
-        await onRefresh?.();
-      } finally {
-        busy = false;
-        setIndicator("hide");
-      }
+      const ymd = selectedDate || todayYmdJst();
+      const ym = toYmFromYmd(ymd);
+      await refreshSlotsYm(ym);
+      fp?.redraw?.();
+      if (isViewVisible(viewSlots)) renderSlotsForSelectedDate();
     },
-    { passive: true }
-  );
+  });
 }
-
-const contentEl = document.querySelector("main.content");
-const ptrEl = document.getElementById("ptr");
-
-setupPullToRefresh({
-  scroller: contentEl,
-  indicator: ptrEl,
-  onRefresh: async () => {
-    // 今どのタブ/ビューかで更新処理を変えるのが気持ちいい
-    if (!viewList?.classList.contains("hidden")) {
-      await openListView(); // 一覧更新
-      return;
-    }
-
-    // 予約タブ（カレンダー周り）は表示月を更新
-    const ymd = selectedDate || todayYmdJst();
-    const ym = toYmFromYmd(ymd);
-    await refreshSlotsYm(ym);
-    fp?.redraw?.();
-    // slots表示中なら一覧も描画し直す
-    if (!viewSlots?.classList.contains("hidden")) renderSlotsForSelectedDate();
-  },
-});
 
 run();
 
