@@ -266,17 +266,33 @@ function showView(name) {
     viewSettings,
   ];
 
-  // 全部隠す（nullでも落ちない）
+  // 全部隠す
   views.forEach((v) => v?.classList.add("hidden"));
 
-  // 対象だけ表示（nullでも落ちない）
-  if (name === "calendar") viewCalendar?.classList.remove("hidden");
-  if (name === "slots") viewSlots?.classList.remove("hidden");
-  if (name === "form") viewForm?.classList.remove("hidden");
-  if (name === "confirm") viewConfirm?.classList.remove("hidden");
-  if (name === "done") viewDone?.classList.remove("hidden");
-  if (name === "list") viewList?.classList.remove("hidden");
-  if (name === "settings") viewSettings?.classList.remove("hidden");
+  // 表示対象を決める
+  let target = null;
+  if (name === "calendar") target = viewCalendar;
+  if (name === "slots") target = viewSlots;
+  if (name === "form") target = viewForm;
+  if (name === "confirm") target = viewConfirm;
+  if (name === "done") target = viewDone;
+  if (name === "list") target = viewList;
+  if (name === "settings") target = viewSettings;
+
+  // 表示
+  target?.classList.remove("hidden");
+
+  // ✅ ここが追加ポイント：必ず先頭に戻す
+  requestAnimationFrame(() => {
+    // ページ全体
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    // view自体がスクロールコンテナの場合
+    if (target) {
+      target.scrollTop = 0;
+      target.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+    }
+  });
 }
 
 function showDone(reserveResult) {
