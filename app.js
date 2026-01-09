@@ -190,82 +190,42 @@ function scrollToTopSmart(viewEl) {
     });
 }
 
-// ====== pull to refresh (main.content) ======
-function setupPullToRefreshForMain() {
-  const scroller = document.querySelector("main.content");
-  const indicator = document.getElementById("ptr");
-  if (!scroller || !indicator) return;
+function setupPullToRefresh({
+  scroller,
+  indicator,
+  threshold = 70,
+  onRefresh,
+}) {
+  if (!scroller) return;
 
-  const THRESHOLD = 70; // 何px引っ張ったら発火させるか
-  const VERTICAL_LIMIT = 8; // 横スワイプ誤爆防止（ほぼ縦だけ許可）
   let startY = 0;
-  let startX = 0;
   let pulling = false;
-  let armed = false; // 閾値超えて「離して更新」状態
+  let triggered = false;
   let busy = false;
 
-  const setPtr = (mode) => {
-    // mode: "hide" | "pull" | "release" | "loading"
-    if (mode === "hide") {
-      indicator.classList.add("hidden");
-      return;
-    }
+  const setIndicator = (state) => {
+    if (!indicator) return;
     indicator.classList.remove("hidden");
     indicator.textContent =
-      mode === "pull"
+      state === "pull"
         ? "引っ張って更新"
-        : mode === "release"
+        : state === "release"
         ? "離して更新"
-        : "更新中…";
-  };
-
-  // ✅ どの画面を更新するか（ここが肝）
-  const refreshCurrentView = async () => {
-    // ローディングオーバーレイは重いので、PTR中は基本出さないのがおすすめ
-    // setLoading(true, "更新中..."); ← 入れたいならここ
-
-    // list 表示中 → 一覧取り直し
-    if (viewList && !viewList.classList.contains("hidden")) {
-      await openListView();
-      return;
-    }
-
-    // reserve（カレンダー周り）
-    // 表示中の日付の月を取り直す
-    const ymd = selectedDate || todayYmdJst();
-    const ym = toYmFromYmd(ymd);
-    await refreshSlotsYm(ym);
-    fp?.redraw?.();
-
-    // slots 表示中なら、表示も更新
-    if (viewSlots && !viewSlots.classList.contains("hidden")) {
-      renderSlotsForSelectedDate();
-    }
-
-    // calendar 表示中は「日付選んでね」に戻すのも気持ちいい
-    if (viewCalendar && !viewCalendar.classList.contains("hidden")) {
-      log(MSG.calendar);
-    }
+        : state === "loading"
+        ? "更新中…"
+        : " ";
+    if (state === "hide") indicator.classList.add("hidden");
   };
 
   scroller.addEventListener(
     "touchstart",
     (e) => {
       if (busy) return;
-      if (scroller.scrollTop !== 0) return; // ✅ 上端以外は開始しない
-
-      // ボタンや入力を触ってる時は無視（誤爆対策）
-      const interactive = e.target.closest?.(
-        "input, textarea, select, button, a, .slot-btn, .danger-btn, .ghost-btn"
-      );
-      if (interactive) return;
-
-      const t = e.touches[0];
-      startY = t.clientY;
-      startX = t.clientX;
+      if (scroller.scrollTop !== 0) return; // 上端じゃないと開始しない
+      startY = e.touches[0].clientY;
       pulling = true;
-      armed = false;
-      setPtr("pull");
+      triggered = false;
+      setIndicator("pull");
     },
     { passive: true }
   );
@@ -276,29 +236,16 @@ function setupPullToRefreshForMain() {
       if (!pulling || busy) return;
       if (scroller.scrollTop !== 0) return;
 
-      const t = e.touches[0];
-      const dy = t.clientY - startY;
-      const dx = Math.abs(t.clientX - startX);
+      const dy = e.touches[0].clientY - startY;
+      if (dy <= 0) return;
 
-      // 横が強いなら終了（タブ切替やスワイプとの干渉を避ける）
-      if (dx > dy + VERTICAL_LIMIT) {
-        pulling = false;
-        setPtr("hide");
-        return;
-      }
-
-      if (dy <= 0) {
-        // 上に戻したら隠す
-        setPtr("hide");
-        return;
-      }
-
-      if (dy > THRESHOLD) {
-        armed = true;
-        setPtr("release");
+      // dyが閾値を超えたら「離して更新」表示
+      if (dy > threshold) {
+        triggered = true;
+        setIndicator("release");
       } else {
-        armed = false;
-        setPtr("pull");
+        triggered = false;
+        setIndicator("pull");
       }
     },
     { passive: true }
@@ -310,29 +257,46 @@ function setupPullToRefreshForMain() {
       if (!pulling || busy) return;
       pulling = false;
 
-      if (!armed) {
-        setPtr("hide");
+      if (!triggered) {
+        setIndicator("hide");
         return;
       }
 
       try {
         busy = true;
-        setPtr("loading");
-        await refreshCurrentView();
-      } catch (e) {
-        console.warn("PTR refresh failed:", e);
-        log(MSG.networkWeak);
+        setIndicator("loading");
+        await onRefresh?.();
       } finally {
         busy = false;
-        setPtr("hide");
+        setIndicator("hide");
       }
     },
     { passive: true }
   );
 }
 
-// 1回だけ有効化
-setupPullToRefreshForMain();
+const contentEl = document.querySelector("main.content");
+const ptrEl = document.getElementById("ptr");
+
+setupPullToRefresh({
+  scroller: contentEl,
+  indicator: ptrEl,
+  onRefresh: async () => {
+    // 今どのタブ/ビューかで更新処理を変えるのが気持ちいい
+    if (!viewList?.classList.contains("hidden")) {
+      await openListView(); // 一覧更新
+      return;
+    }
+
+    // 予約タブ（カレンダー周り）は表示月を更新
+    const ymd = selectedDate || todayYmdJst();
+    const ym = toYmFromYmd(ymd);
+    await refreshSlotsYm(ym);
+    fp?.redraw?.();
+    // slots表示中なら一覧も描画し直す
+    if (!viewSlots?.classList.contains("hidden")) renderSlotsForSelectedDate();
+  },
+});
 
 // ====== modal (cancel confirm) ======
 const modalOverlay = document.getElementById("modalOverlay");
