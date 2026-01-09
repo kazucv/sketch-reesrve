@@ -601,6 +601,53 @@
         margin: initial;
       }
 
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(2px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        pointer-events: all; /* ← これで背面タップを完全ブロック */
+      }
+
+      .loading-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      }
+
+      .spinner {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 3px solid rgba(0, 0, 0, 0.12);
+        border-top-color: rgba(0, 0, 0, 0.55);
+        animation: spin 0.8s linear infinite;
+      }
+
+      .loading-text {
+        font-size: 13px;
+        opacity: 0.75;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
       /* --- tap feedback: iOSっぽい押し感 --- */
       button {
         -webkit-tap-highlight-color: transparent;
@@ -689,6 +736,13 @@
   </head>
 
   <body>
+    <div id="loadingOverlay" class="loading-overlay hidden" aria-hidden="true">
+      <div class="loading-box">
+        <div class="spinner"></div>
+        <div id="loadingText" class="loading-text">読み込み中...</div>
+      </div>
+    </div>
+
     <div class="app">
       <header class="header">
         <div class="header-inner">
@@ -776,7 +830,7 @@
           <button id="confirmSubmitBtn" class="primary">
             この内容で予約する
           </button>
-          <div class="hint">予約を確定すると、カレンダーに登録されます</div>
+          <div class="hint">この内容で予約を確定します</div>
         </section>
 
         <section id="viewDone" class="view hidden">

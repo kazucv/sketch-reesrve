@@ -117,6 +117,21 @@ function fmtMdWithDow(ymd) {
   return `${mo}月${d}日(${dow})`;
 }
 
+const loadingOverlay = document.getElementById("loadingOverlay");
+const loadingTextEl = document.getElementById("loadingText");
+
+function setLoading(isLoading, text = "読み込み中...") {
+  if (!loadingOverlay) return;
+
+  if (loadingTextEl) loadingTextEl.textContent = text;
+
+  loadingOverlay.classList.toggle("hidden", !isLoading);
+  loadingOverlay.setAttribute("aria-hidden", String(!isLoading));
+
+  // ついでにスクロールも止めたいなら
+  document.body.style.overflow = isLoading ? "hidden" : "";
+}
+
 // ====== modal (cancel confirm) ======
 const modalOverlay = document.getElementById("modalOverlay");
 const cancelModal = document.getElementById("cancelModal");
@@ -574,6 +589,7 @@ function initFlatpickr() {
       const ym = `${y}${m}`;
 
       try {
+        setLoading(true, "空き枠を読み込み中...");
         log("枠を取得中...");
         const slots = await fetchSlotsYm(ym);
 
