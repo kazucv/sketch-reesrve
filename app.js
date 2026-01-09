@@ -125,11 +125,18 @@ function setLoading(isLoading, text = "読み込み中...") {
 
   if (loadingTextEl) loadingTextEl.textContent = text;
 
+  if (isLoading) {
+    if (!document.body.dataset.prevOverflow) {
+      document.body.dataset.prevOverflow = document.body.style.overflow || "";
+    }
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = document.body.dataset.prevOverflow || "";
+    delete document.body.dataset.prevOverflow;
+  }
+
   loadingOverlay.classList.toggle("hidden", !isLoading);
   loadingOverlay.setAttribute("aria-hidden", String(!isLoading));
-
-  // ついでにスクロールも止めたいなら
-  document.body.style.overflow = isLoading ? "hidden" : "";
 }
 
 // ====== modal (cancel confirm) ======
@@ -566,6 +573,7 @@ function initFlatpickr() {
       const ym = toYmFromYmd(selectedDate);
 
       try {
+        setLoading(true, "空き枠を読み込み中...");
         log("枠を取得中...");
 
         const slots = await fetchSlotsYm(ym, { force: !didForceWarm });
@@ -591,10 +599,10 @@ function initFlatpickr() {
       try {
         setLoading(true, "空き枠を読み込み中...");
         log("枠を取得中...");
-        const slots = await fetchSlotsYm(ym);
 
-        // ✅ aborted/古いレスポンスなら描画しない（表示巻き戻り防止）
-        if (slots === null) return; // aborted/古いレスポンス
+        const slots = await fetchSlotsYm(ym);
+        if (slots === null) return;
+
         if (slots.length === 0) {
           log("この月は空きがないみたい");
           fp.redraw();
@@ -616,6 +624,7 @@ function initFlatpickr() {
       const ym = toYmFromYmd(selectedDate);
 
       try {
+        setLoading(true, "空き枠を読み込み中...");
         log("枠を取得中...");
         const slots = await fetchSlotsYm(ym);
 
