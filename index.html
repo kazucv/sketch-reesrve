@@ -102,8 +102,8 @@
       .content {
         flex: 1 1 auto;
         overflow: auto;
-        max-width: 720px;
-        padding: 10px 16px 18px;
+        /* max-width: 720px; */
+        padding: 1rem;
         -webkit-overflow-scrolling: touch;
         /* padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 22px); */
         background-color: #efefef;
@@ -151,7 +151,9 @@
         color: rgba(0, 0, 0, 0.6);
       }
 
-      #calendar {
+      .flatpickr-rContainer {
+        padding: 0.5rem;
+        width: 100%;
       }
       .flatpickr-calendar {
         width: 100% !important;
@@ -160,12 +162,17 @@
         box-shadow: var(--shadow) !important;
         overflow: hidden;
       }
+      .dayContainer {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+      }
       .flatpickr-current-month .flatpickr-monthDropdown-months {
         padding: initial;
       }
       .flatpickr-current-month .numInputWrapper {
         pointer-events: none;
         margin-left: auto;
+        margin-right: 0.5rem;
         width: initial;
       }
       .flatpickr-months {
