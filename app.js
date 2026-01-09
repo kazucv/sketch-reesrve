@@ -697,10 +697,11 @@ function renderSlotsForSelectedDate() {
   const pm = slots.filter((s) => !isAM(s));
 
   if (am.length === 0) {
-    if (slotsAM) slotsAM.textContent = "<div>空きなし</div>";
+    if (slotsAM) slotsAM.innerHTML = `<span class="no-slot">空きなし</span>`;
   }
+
   if (pm.length === 0) {
-    if (slotsPM) slotsPM.textContent = "<div>空きなし</div>";
+    if (slotsPM) slotsPM.innerHTML = `<span class="no-slot">空きなし</span>`;
   }
 
   const renderBtn = (slot) => {
