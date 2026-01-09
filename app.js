@@ -193,7 +193,7 @@ function scrollToTopSmart(viewEl) {
 function setupPullToRefresh({
   scroller,
   indicator,
-  threshold = 70,
+  threshold = 40,
   onRefresh,
 }) {
   if (!scroller) return;
@@ -238,41 +238,54 @@ function setupPullToRefresh({
   // ✅ 起動直後は絶対隠す
   setIndicator("hide");
 
-  scroller.addEventListener(
-    "touchstart",
-    (e) => {
-      if (busy) return;
-      if (isInteractive(e.target)) return; // ✅ ボタン等の操作を邪魔しない
-      if (scroller.scrollTop !== 0) return;
-
-      startY = e.touches[0].clientY;
-      pulling = true;
-      triggered = false;
-
-      // ✅ touchstartでは表示しない
-      setIndicator("hide");
-    },
-    { passive: true }
-  );
+  let lastDy = 0;
 
   scroller.addEventListener(
     "touchmove",
     (e) => {
       if (!pulling || busy) return;
-      if (scroller.scrollTop !== 0) return;
+      if (scroller.scrollTop > 0) return;
 
       const dy = e.touches[0].clientY - startY;
+      lastDy = dy;
 
-      // ✅ ちょい触り（誤作動）を無視
       if (dy < 8) return;
 
-      // ✅ ここで初めて表示する
       if (dy > threshold) {
         triggered = true;
         setIndicator("release");
       } else {
         triggered = false;
         setIndicator("pull");
+      }
+    },
+    { passive: true }
+  );
+
+  scroller.addEventListener(
+    "touchend",
+    async () => {
+      if (!pulling || busy) return;
+      pulling = false;
+
+      // ✅ 最終dyで最終判定
+      const willRefresh = lastDy > threshold;
+
+      console.log("PTR end:", { lastDy, threshold, willRefresh });
+
+      if (!willRefresh) {
+        setIndicator("hide");
+        return;
+      }
+
+      try {
+        busy = true;
+        setIndicator("loading");
+        await onRefresh?.();
+      } finally {
+        busy = false;
+        setIndicator("hide");
+        lastDy = 0;
       }
     },
     { passive: true }
