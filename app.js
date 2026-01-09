@@ -1078,6 +1078,7 @@ function renderReservationList(items) {
           message: "本当にキャンセルしますか？",
           meta: `${ymdLabel2} / ${time2}\n予約ID: ${targetRid2}`,
           onYes: async () => {
+            setLoading(true, "キャンセル処理中...");
             try {
               setListStatus?.("キャンセル中...");
 
@@ -1109,6 +1110,8 @@ function renderReservationList(items) {
             } catch (err) {
               setListStatus("キャンセルできませんでした");
               log(`ERROR: ${err?.message || err}`);
+            } finally {
+              setLoading(false);
             }
           },
         });
@@ -1123,12 +1126,15 @@ function renderReservationList(items) {
         ensureCalendarView();
         log("空きを確認してるよ...");
 
+        setLoading(true, "空き枠を更新中...");
         try {
           const ym2 = toYmFromYmd(ymd2);
           await refreshSlotsYm(ym2);
           fp?.setDate(ymd2, true); // onChangeでslotsへ
         } catch (e2) {
           log(`ERROR: ${e2?.message || e2}`);
+        } finally {
+          setLoading(false);
         }
       }
     });
@@ -1226,6 +1232,7 @@ async function openListView() {
   showView("list");
 
   // ヘッダー（status）にローディング表示
+  setLoading(true, "予約一覧を取得中...");
   log("予約一覧を取得中...");
 
   try {
@@ -1261,6 +1268,9 @@ async function openListView() {
         ensureCalendarView();
       });
     }
+  } finally {
+    // ✅ ローディングOFF（成功/失敗どっちでも確実に消す）
+    setLoading(false);
   }
 }
 
@@ -1332,6 +1342,7 @@ async function run() {
     });
 
     confirmSubmitBtn?.addEventListener("click", async () => {
+      setLoading(true, "予約処理中...");
       try {
         // 二重送信防止
         confirmSubmitBtn.disabled = true;
@@ -1342,6 +1353,7 @@ async function run() {
         log(`ERROR: ${e?.message || e}`);
         console.error(e);
       } finally {
+        setLoading(false);
         confirmSubmitBtn.disabled = false;
         confirmSubmitBtn.textContent = "この内容で予約する";
       }
