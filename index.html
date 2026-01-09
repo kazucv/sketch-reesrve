@@ -282,14 +282,23 @@
       .slot-btn {
         width: 100%;
         border: 0;
-        padding: 18px 20px;
+        padding: 10px 14px;
         /* border-radius: var(--radius); */
         background: var(--bg);
         /* margin: 10px 0; */
         text-align: left;
         font-size: 16px;
-        font-weight: bold;
+        /* font-weight: bold; */
         color: #0b5bd3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      button.slot-btn:after {
+        content: "\e13a";
+        font-family: "Phosphor";
+        margin-left: auto;
       }
 
       .slot-btn + .slot-btn {
