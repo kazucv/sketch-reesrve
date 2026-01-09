@@ -220,12 +220,7 @@ function setupPullToRefresh({
   scroller.addEventListener(
     "touchstart",
     (e) => {
-      console.log(
-        "PTR touchstart / scroller:",
-        scroller,
-        "scrollTop:",
-        scroller.scrollTop
-      );
+      console.log("PTR touchmove:", scroller, "scrollTop:", scroller.scrollTop);
       if (busy) return;
       if (scroller.scrollTop !== 0) return; // 上端じゃないと開始しない
       startY = e.touches[0].clientY;
