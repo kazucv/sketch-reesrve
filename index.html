@@ -559,7 +559,7 @@
       /* --- tokens: まずは触りやすい所だけ --- */
       :root {
         --blue: #0b5bd3;
-        --focus: rgba(11, 91, 211, 0.22);
+        --focus: rgba(11, 91, 211, 0.1);
         --border: rgba(0, 0, 0, 0.08);
         --border-weak: rgba(0, 0, 0, 0.06);
         --text-weak: rgba(17, 17, 17, 0.72);
@@ -669,6 +669,7 @@
       .no-slot {
         opacity: 0.6;
         font-size: 13px;
+        margin-left: 0.5rem;
       }
     </style>
   </head>
@@ -700,7 +701,9 @@
 
         <section id="viewSlots" class="view hidden">
           <div class="topbar">
-            <button id="backToCalendar" class="back">← 日付選択</button>
+            <button id="backToCalendar" class="back">
+              <i class="ph ph-caret-left"></i>日付選択にもどる
+            </button>
           </div>
 
           <div class="title">空き時間</div>
@@ -719,7 +722,9 @@
 
         <section id="viewForm" class="view hidden">
           <div class="topbar">
-            <button id="backToSlots" class="back">← 空き時間</button>
+            <button id="backToSlots" class="back">
+              <i class="ph ph-caret-left"></i>空き時間にもどる
+            </button>
           </div>
 
           <div class="title">入力</div>
@@ -744,7 +749,9 @@
 
         <section id="viewConfirm" class="view hidden">
           <div class="topbar">
-            <button id="confirmBackBtn" class="back">← 戻って修正</button>
+            <button id="confirmBackBtn" class="back">
+              <i class="ph ph-caret-left"></i>もどって修正
+            </button>
           </div>
 
           <div class="title">確認</div>
