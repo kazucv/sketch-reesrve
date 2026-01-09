@@ -1655,17 +1655,36 @@ async function run() {
     scroller: contentEl,
     indicator: ptrEl,
     onRefresh: async () => {
-      // ここは安心して profile を使える
-      if (isViewVisible(viewList)) {
+      // 一覧はopenListView内でローディング出るので、そのまま
+      if (!viewList?.classList.contains("hidden")) {
         await openListView();
         return;
       }
 
-      const ymd = selectedDate || todayYmdJst();
-      const ym = toYmFromYmd(ymd);
-      await refreshSlotsYm(ym);
-      fp?.redraw?.();
-      if (isViewVisible(viewSlots)) renderSlotsForSelectedDate();
+      // ✅ カレンダー/枠の更新はここでローディングを出す
+      setLoading(true, "空き枠を更新中...");
+      try {
+        const ymd = selectedDate || todayYmdJst();
+        const ym = toYmFromYmd(ymd);
+
+        await refreshSlotsYm(ym);
+        fp?.redraw?.();
+
+        // slots表示中なら一覧も更新
+        if (!viewSlots?.classList.contains("hidden")) {
+          renderSlotsForSelectedDate();
+        }
+
+        // calendar表示中ならメッセージも気持ちよく
+        if (!viewCalendar?.classList.contains("hidden")) {
+          log("最新の空きに更新したよ🙂");
+        }
+      } catch (e) {
+        log("更新できなかった…通信が不安定みたい。もう一度試してね");
+        console.warn(e);
+      } finally {
+        setLoading(false);
+      }
     },
   });
 }
