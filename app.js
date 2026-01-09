@@ -572,8 +572,8 @@ function initFlatpickr() {
       selectedDate = toYmd(selectedDates[0] || today);
       const ym = toYmFromYmd(selectedDate);
 
+      setLoading(true, "空き枠を読み込み中...");
       try {
-        setLoading(true, "空き枠を読み込み中...");
         log("枠を取得中...");
 
         const slots = await fetchSlotsYm(ym, { force: !didForceWarm });
@@ -588,6 +588,8 @@ function initFlatpickr() {
         if (isViewVisible(viewCalendar)) log("日付を選んでね");
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
+      } finally {
+        setLoading(false); // ✅ 絶対戻す
       }
     },
 
@@ -596,8 +598,8 @@ function initFlatpickr() {
       const m = pad2(instance.currentMonth + 1);
       const ym = `${y}${m}`;
 
+      setLoading(true, "空き枠を読み込み中...");
       try {
-        setLoading(true, "空き枠を読み込み中...");
         log("枠を取得中...");
 
         const slots = await fetchSlotsYm(ym);
@@ -613,6 +615,8 @@ function initFlatpickr() {
         if (isViewVisible(viewCalendar)) log("日付を選んでね");
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
+      } finally {
+        setLoading(false); // ✅
       }
     },
 
@@ -623,20 +627,21 @@ function initFlatpickr() {
 
       const ym = toYmFromYmd(selectedDate);
 
+      setLoading(true, "空き枠を読み込み中...");
       try {
-        setLoading(true, "空き枠を読み込み中...");
         log("枠を取得中...");
         const slots = await fetchSlotsYm(ym);
 
-        // ✅ aborted/古いレスポンスなら画面遷移しない（中途半端なslots画面を防ぐ）
+        // aborted/古いレスポンスなら画面遷移しない
         if (!slots) return;
 
         fp.redraw();
         renderSlotsForSelectedDate();
         showView("slots");
-        //log("時間を選んでね");
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
+      } finally {
+        setLoading(false); // ✅
       }
     },
 
@@ -1516,3 +1521,7 @@ function setupSwipeBack() {
 }
 
 setupSwipeBack();
+
+// ====== safety net: loading解除 ======
+window.addEventListener("unhandledrejection", () => setLoading(false));
+window.addEventListener("error", () => setLoading(false));
