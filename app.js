@@ -139,6 +139,57 @@ function setLoading(isLoading, text = "読み込み中...") {
   loadingOverlay.setAttribute("aria-hidden", String(!isLoading));
 }
 
+function isScrollable(el) {
+  if (!el) return false;
+  const style = getComputedStyle(el);
+  const oy = style.overflowY;
+  if (!(oy === "auto" || oy === "scroll")) return false;
+  return el.scrollHeight > el.clientHeight + 1;
+}
+
+function findScrollContainer(startEl) {
+  // まず view から親へ辿って「実際にスクロールしてる箱」を探す
+  let el = startEl;
+  while (el && el !== document.body && el !== document.documentElement) {
+    if (isScrollable(el)) return el;
+    el = el.parentElement;
+  }
+  // 最後にドキュメントのスクロール要素へ
+  return document.scrollingElement || document.documentElement;
+}
+
+function scrollToTopSmart(viewEl) {
+  // 1) document 自体（効く環境もある）
+  const se = document.scrollingElement || document.documentElement;
+  try {
+    se.scrollTop = 0;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  } catch {}
+
+  // 2) view の中身に scrollable がある場合も潰す
+  try {
+    viewEl?.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+    if (viewEl) viewEl.scrollTop = 0;
+  } catch {}
+
+  // 3) “本丸” = スクロールコンテナを特定してトップへ
+  const sc = findScrollContainer(viewEl);
+  try {
+    sc.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+    sc.scrollTop = 0;
+  } catch {}
+
+  // 4) 念のため：指定クラスや data-scroll の中も潰す（任意）
+  viewEl
+    ?.querySelectorAll?.("[data-scroll], .scroll, .scroll-area")
+    ?.forEach((el) => {
+      try {
+        el.scrollTop = 0;
+        el.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+      } catch {}
+    });
+}
+
 // ====== modal (cancel confirm) ======
 const modalOverlay = document.getElementById("modalOverlay");
 const cancelModal = document.getElementById("cancelModal");
@@ -266,10 +317,8 @@ function showView(name) {
     viewSettings,
   ];
 
-  // 全部隠す
   views.forEach((v) => v?.classList.add("hidden"));
 
-  // 表示対象を決める
   let target = null;
   if (name === "calendar") target = viewCalendar;
   if (name === "slots") target = viewSlots;
@@ -279,19 +328,13 @@ function showView(name) {
   if (name === "list") target = viewList;
   if (name === "settings") target = viewSettings;
 
-  // 表示
   target?.classList.remove("hidden");
 
-  // ✅ ここが追加ポイント：必ず先頭に戻す
+  // ✅ レイアウトが確定してからトップに戻す（重要）
   requestAnimationFrame(() => {
-    // ページ全体
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-
-    // view自体がスクロールコンテナの場合
-    if (target) {
-      target.scrollTop = 0;
-      target.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
-    }
+    requestAnimationFrame(() => {
+      scrollToTopSmart(target);
+    });
   });
 }
 
