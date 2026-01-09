@@ -842,6 +842,7 @@ async function reserveSelected() {
   }
 
   // ✅ 成功（ここから “体感優先”）
+  setLoading(false);
   showDone(r.data);
 
   // ✅ 備考だけクリア（連続予約でも事故らない）
@@ -1379,18 +1380,33 @@ async function run() {
     });
 
     confirmSubmitBtn?.addEventListener("click", async () => {
+      // ✅ 先に必須チェック（ここでreturnするならローディング出さない＝チラつかない）
+      if (!selectedSlot) {
+        log("先に時間を選んでね");
+        return;
+      }
+
+      const name = String(nameInput.value || "").trim();
+      const tel = normalizeTel(telInput.value);
+
+      if (!name || !tel) {
+        log("お名前と電話番号は必須だよ");
+        return;
+      }
+
       try {
         confirmSubmitBtn.disabled = true;
         confirmSubmitBtn.textContent = "予約しています...";
 
-        setLoading(true, "予約を確定中..."); // ★追加
+        setLoading(true, "予約を確定中...");
 
-        await reserveSelected(); // ★成功時は中で showDone まで行く
+        await reserveSelected(); // 成功時は reserveSelected 内で showDone まで行く
       } catch (e) {
         log(`ERROR: ${e?.message || e}`);
         console.error(e);
       } finally {
-        setLoading(false); // ★追加：成功確定で即OFF
+        // ✅ 失敗/例外/途中return等の保険。成功時に既にOFFでもOK
+        setLoading(false);
 
         confirmSubmitBtn.disabled = false;
         confirmSubmitBtn.textContent = "この内容で予約する";
