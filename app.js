@@ -202,10 +202,29 @@ function setupPullToRefresh({
   let pulling = false;
   let triggered = false;
   let busy = false;
+  let shown = false;
+
+  const isInteractive = (el) =>
+    el?.closest?.(
+      "input, textarea, select, button, a, .slot-btn, .danger-btn, .ghost-btn"
+    );
 
   const setIndicator = (state) => {
     if (!indicator) return;
-    indicator.classList.remove("hidden");
+
+    // ✅ 最初は隠す。表示が必要になった時だけ出す
+    if (state === "hide") {
+      indicator.classList.add("hidden");
+      indicator.textContent = "";
+      shown = false;
+      return;
+    }
+
+    if (!shown) {
+      indicator.classList.remove("hidden");
+      shown = true;
+    }
+
     indicator.textContent =
       state === "pull"
         ? "引っ張って更新"
@@ -213,20 +232,25 @@ function setupPullToRefresh({
         ? "離して更新"
         : state === "loading"
         ? "更新中…"
-        : " ";
-    if (state === "hide") indicator.classList.add("hidden");
+        : "";
   };
+
+  // ✅ 起動直後は絶対隠す
+  setIndicator("hide");
 
   scroller.addEventListener(
     "touchstart",
     (e) => {
-      console.log("PTR touchmove:", scroller, "scrollTop:", scroller.scrollTop);
       if (busy) return;
-      if (scroller.scrollTop !== 0) return; // 上端じゃないと開始しない
+      if (isInteractive(e.target)) return; // ✅ ボタン等の操作を邪魔しない
+      if (scroller.scrollTop !== 0) return;
+
       startY = e.touches[0].clientY;
       pulling = true;
       triggered = false;
-      setIndicator("pull");
+
+      // ✅ touchstartでは表示しない
+      setIndicator("hide");
     },
     { passive: true }
   );
@@ -238,11 +262,11 @@ function setupPullToRefresh({
       if (scroller.scrollTop !== 0) return;
 
       const dy = e.touches[0].clientY - startY;
-      if (dy <= 0) return;
 
-      e.preventDefault();
+      // ✅ ちょい触り（誤作動）を無視
+      if (dy < 8) return;
 
-      // dyが閾値を超えたら「離して更新」表示
+      // ✅ ここで初めて表示する
       if (dy > threshold) {
         triggered = true;
         setIndicator("release");
@@ -251,7 +275,7 @@ function setupPullToRefresh({
         setIndicator("pull");
       }
     },
-    { passive: false } // ✅ ここが超重要
+    { passive: true }
   );
 
   scroller.addEventListener(
@@ -269,10 +293,8 @@ function setupPullToRefresh({
         busy = true;
         setIndicator("loading");
         await onRefresh?.();
-        console.log("✅ pull refresh done");
       } catch (e) {
         console.error("❌ pull refresh failed", e);
-        logError(`更新できなかった… ${e?.message || e}`);
       } finally {
         busy = false;
         setIndicator("hide");
