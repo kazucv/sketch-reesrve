@@ -1648,9 +1648,15 @@ async function run() {
   const contentEl = document.querySelector("main.content");
   const ptrEl = document.getElementById("ptr");
 
+  // ✅ ここで scrollerEl を必ず作る
+  const scrollerEl =
+    findScrollContainer?.(contentEl) ||
+    contentEl ||
+    document.scrollingElement ||
+    document.documentElement;
+
   setupPullToRefresh({
-    scroller: contentEl,
-    scroller: scrollerEl,
+    scroller: scrollerEl, // ✅ 1つだけ
     indicator: ptrEl,
     onRefresh: async () => {
       // ✅ 一覧表示中は openListView に全部任せる（ローディングも含む）
@@ -1659,18 +1665,13 @@ async function run() {
         return;
       }
 
-      // ✅ カレンダー/枠側だけ、ここでローディングを出す
-      setLoading(true, "空き枠を更新中...");
-      try {
-        const ymd = selectedDate || todayYmdJst();
-        const ym = toYmFromYmd(ymd);
+      const ymd = selectedDate || todayYmdJst();
+      const ym = toYmFromYmd(ymd);
 
-        await refreshSlotsYm(ym);
-        fp?.redraw?.();
-        if (isViewVisible(viewSlots)) renderSlotsForSelectedDate();
-      } finally {
-        setLoading(false);
-      }
+      await refreshSlotsYm(ym);
+      fp?.redraw?.();
+
+      if (isViewVisible(viewSlots)) renderSlotsForSelectedDate();
     },
   });
 }
