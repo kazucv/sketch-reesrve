@@ -429,16 +429,16 @@ function showView(name) {
   // 表示
   target?.classList.remove("hidden");
 
-  // ✅ ここが追加ポイント：必ず先頭に戻す
   requestAnimationFrame(() => {
-    // ページ全体
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-
-    // view自体がスクロールコンテナの場合
     if (target) {
       target.scrollTop = 0;
       target.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
     }
+
+    // ✅ PTRのscrollerも必ず0にする（ここ大事）
+    const contentEl = document.querySelector("main.content");
+    if (contentEl) contentEl.scrollTop = 0;
   });
 }
 
@@ -1655,13 +1655,13 @@ async function run() {
     scroller: contentEl,
     indicator: ptrEl,
     onRefresh: async () => {
-      // 一覧はopenListView内でローディング出るので、そのまま
-      if (!viewList?.classList.contains("hidden")) {
+      // ✅ 一覧表示中は openListView に全部任せる（ローディングも含む）
+      if (isViewVisible(viewList)) {
         await openListView();
         return;
       }
 
-      // ✅ カレンダー/枠の更新はここでローディングを出す
+      // ✅ カレンダー/枠側だけ、ここでローディングを出す
       setLoading(true, "空き枠を更新中...");
       try {
         const ymd = selectedDate || todayYmdJst();
@@ -1669,19 +1669,7 @@ async function run() {
 
         await refreshSlotsYm(ym);
         fp?.redraw?.();
-
-        // slots表示中なら一覧も更新
-        if (!viewSlots?.classList.contains("hidden")) {
-          renderSlotsForSelectedDate();
-        }
-
-        // calendar表示中ならメッセージも気持ちよく
-        if (!viewCalendar?.classList.contains("hidden")) {
-          log("最新の空きに更新したよ🙂");
-        }
-      } catch (e) {
-        log("更新できなかった…通信が不安定みたい。もう一度試してね");
-        console.warn(e);
+        if (isViewVisible(viewSlots)) renderSlotsForSelectedDate();
       } finally {
         setLoading(false);
       }
