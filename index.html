@@ -791,62 +791,58 @@
 
           <!-- ✅ カレンダー下の案内（ここに追加） -->
           <section class="calendar-note" aria-label="予約に関するご案内">
-            <div class="card">
-              <h2 class="calendar-note__title">ご予約について</h2>
+            <h2 class="calendar-note__title">ご予約について</h2>
 
-              <ul class="calendar-note__list">
-                <li>
-                  ご予約はカレンダーから空いている時間枠を選択して行います
-                </li>
-                <li>
-                  所要時間は内容によって異なります
+            <ul class="calendar-note__list">
+              <li>ご予約はカレンダーから空いている時間枠を選択して行います</li>
+              <li>
+                所要時間は内容によって異なります
+                <span class="calendar-note__sub">
+                  ※詳細は当日のご案内や事前連絡をご確認ください
+                </span>
+              </li>
+              <li>開始時刻の目安：予約時間を目安にお越しください</li>
+            </ul>
+
+            <h3 class="calendar-note__subtitle">ご利用にあたってのお願い</h3>
+            <ul class="calendar-note__list">
+              <li>
+                遅れる場合や、来所が難しくなった場合は、分かった時点でご連絡ください
+              </li>
+              <li>
+                予約の変更はいったんキャンセル後、空き枠から再度ご予約ください
+              </li>
+              <li>
+                状況により、開始時間や内容を調整させていただく場合があります
+              </li>
+            </ul>
+
+            <h3 class="calendar-note__subtitle">よくあるご質問</h3>
+            <dl class="calendar-note__faq">
+              <div class="calendar-note__qa">
+                <dt>Q. 当日のキャンセルはどうすればいいですか？</dt>
+                <dd>
+                  A. 当日のキャンセルは、お電話にてご連絡をお願いします。
                   <span class="calendar-note__sub">
-                    ※詳細は当日のご案内や事前連絡をご確認ください
+                    ※前日までのキャンセルは、予約一覧から操作できます
                   </span>
-                </li>
-                <li>開始時刻の目安：予約時間を目安にお越しください</li>
-              </ul>
+                </dd>
+              </div>
 
-              <h3 class="calendar-note__subtitle">ご利用にあたってのお願い</h3>
-              <ul class="calendar-note__list">
-                <li>
-                  遅れる場合や、来所が難しくなった場合は、分かった時点でご連絡ください
-                </li>
-                <li>
-                  予約の変更はいったんキャンセル後、空き枠から再度ご予約ください
-                </li>
-                <li>
-                  状況により、開始時間や内容を調整させていただく場合があります
-                </li>
-              </ul>
+              <div class="calendar-note__qa">
+                <dt>Q. 予約内容はどこで確認できますか？</dt>
+                <dd>A. 「予約一覧」からご自身の予約を確認できます。</dd>
+              </div>
 
-              <h3 class="calendar-note__subtitle">よくあるご質問</h3>
-              <dl class="calendar-note__faq">
-                <div class="calendar-note__qa">
-                  <dt>Q. 当日のキャンセルはどうすればいいですか？</dt>
-                  <dd>
-                    A. 当日のキャンセルは、お電話にてご連絡をお願いします。
-                    <span class="calendar-note__sub">
-                      ※前日までのキャンセルは、予約一覧から操作できます
-                    </span>
-                  </dd>
-                </div>
+              <div class="calendar-note__qa">
+                <dt>Q. キャンセルしたい場合はどうすればいいですか？</dt>
+                <dd>A. 予約一覧からキャンセルできます。</dd>
+              </div>
+            </dl>
 
-                <div class="calendar-note__qa">
-                  <dt>Q. 予約内容はどこで確認できますか？</dt>
-                  <dd>A. 「予約一覧」からご自身の予約を確認できます。</dd>
-                </div>
-
-                <div class="calendar-note__qa">
-                  <dt>Q. キャンセルしたい場合はどうすればいいですか？</dt>
-                  <dd>A. 予約一覧からキャンセルできます。</dd>
-                </div>
-              </dl>
-
-              <p class="calendar-note__hint">
-                ※予約状況はリアルタイムで更新されます
-              </p>
-            </div>
+            <p class="calendar-note__hint">
+              ※予約状況はリアルタイムで更新されます
+            </p>
           </section>
         </section>
 
@@ -933,35 +929,31 @@
           <div id="listRoot"></div>
 
           <section class="list-note" aria-label="予約一覧のご案内">
-            <div class="card">
-              <h2 class="list-note__title">ご予約・キャンセルについて</h2>
+            <h2 class="list-note__title">ご予約・キャンセルについて</h2>
 
-              <dl class="list-note__faq">
-                <div class="list-note__qa">
-                  <dt>Q. 予約内容はどこで確認できますか？</dt>
-                  <dd>
-                    A. このページの「予約一覧」からご自身の予約を確認できます。
-                  </dd>
-                </div>
+            <dl class="list-note__faq">
+              <div class="list-note__qa">
+                <dt>Q. 予約内容はどこで確認できますか？</dt>
+                <dd>
+                  A. このページの「予約一覧」からご自身の予約を確認できます。
+                </dd>
+              </div>
 
-                <div class="list-note__qa">
-                  <dt>Q. キャンセルしたい場合はどうすればいいですか？</dt>
-                  <dd>A. 前日までのキャンセルは、予約一覧から操作できます。</dd>
-                </div>
+              <div class="list-note__qa">
+                <dt>Q. キャンセルしたい場合はどうすればいいですか？</dt>
+                <dd>A. 前日までのキャンセルは、予約一覧から操作できます。</dd>
+              </div>
 
-                <div class="list-note__qa">
-                  <dt>Q. 当日のキャンセルはどうすればいいですか？</dt>
-                  <dd>
-                    A. 当日のキャンセルは、お電話にてご連絡をお願いします。
-                  </dd>
-                </div>
-              </dl>
+              <div class="list-note__qa">
+                <dt>Q. 当日のキャンセルはどうすればいいですか？</dt>
+                <dd>A. 当日のキャンセルは、お電話にてご連絡をお願いします。</dd>
+              </div>
+            </dl>
 
-              <p class="list-note__hint">
-                ※予約状況はリアルタイムで更新されます。<br />
-                表示が古い場合は、画面を下に引っ張って更新してください。
-              </p>
-            </div>
+            <p class="list-note__hint">
+              ※予約状況はリアルタイムで更新されます。<br />
+              表示が古い場合は、画面を下に引っ張って更新してください。
+            </p>
           </section>
         </section>
 
