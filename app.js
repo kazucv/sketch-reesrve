@@ -1521,6 +1521,7 @@ function ymdToYm(d) {
 async function run() {
   if (!window.liff) {
     log("LIFF SDKが読み込めてない…");
+    setLoading(false);
     return;
   }
 
